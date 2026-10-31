@@ -5,6 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focus.FocusRequester
 import androidx.compose.foundation.focus.requestFocus
+import androidx.compose.foundation.onKeyEvent
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -44,6 +47,26 @@ fun AgentScreen(settings: SettingsState) {
         }
     }
 
+    val sendMessage = {
+        if (input.isNotBlank()) {
+            val text = input
+            input = ""
+            messages.add(Message(Role.User, text))
+            scope.launch {
+                try {
+                    val config = AgentLoop.AgentConfig(
+                        provider = settings.provider,
+                        systemPrompt = settings.systemPrompt
+                    )
+                    val reply = agent.run(config, messages.toList())
+                    messages.add(Message(Role.Agent, reply))
+                } catch (e: Exception) {
+                    messages.add(Message(Role.Agent, "Error: ${e.message}"))
+                }
+            }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier
@@ -77,44 +100,22 @@ fun AgentScreen(settings: SettingsState) {
                     shape = MaterialTheme.shapes.medium,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                     onImeAction = {
-                        if (it == ImeAction.Send && input.isNotBlank()) {
-                            val text = input
-                            input = ""
-                            messages.add(Message(Role.User, text))
-                            scope.launch {
-                                try {
-                                    val config = AgentLoop.AgentConfig(
-                                        provider = settings.provider,
-                                        systemPrompt = settings.systemPrompt
-                                    )
-                                    val reply = agent.run(config, messages.toList())
-                                    messages.add(Message(Role.Agent, reply))
-                                } catch (e: Exception) {
-                                    messages.add(Message(Role.Agent, "Error: ${e.message}"))
-                                }
-                            }
+                        if (it == ImeAction.Send) {
+                            sendMessage()
+                        }
+                    },
+                    onKeyEvent = { keyEvent ->
+                        if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.Enter) {
+                            sendMessage()
+                            true
+                        } else {
+                            false
                         }
                     }
                 )
                 androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
                 IconButton(onClick = {
-                    if (input.isNotBlank()) {
-                        val text = input
-                        input = ""
-                        messages.add(Message(Role.User, text))
-                        scope.launch {
-                            try {
-                                val config = AgentLoop.AgentConfig(
-                                    provider = settings.provider,
-                                    systemPrompt = settings.systemPrompt
-                                )
-                                val reply = agent.run(config, messages.toList())
-                                messages.add(Message(Role.Agent, reply))
-                            } catch (e: Exception) {
-                                messages.add(Message(Role.Agent, "Error: ${e.message}"))
-                            }
-                        }
-                    }
+                    sendMessage()
                 }) {
                     Text(text = "Send")
                 }
