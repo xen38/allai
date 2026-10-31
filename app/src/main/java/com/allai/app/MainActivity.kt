@@ -3,6 +3,7 @@ package com.allai.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -33,34 +34,67 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MainNav(settings: SettingsState) {
     var selected by remember { mutableIntStateOf(0) }
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    icon = { Text(text = "Chat") },
-                    label = { Text("Chat") },
-                    selected = selected == 0,
-                    onClick = { selected = 0 }
-                )
-                NavigationBarItem(
-                    icon = { Text(text = "Term") },
-                    label = { Text("Terminal") },
-                    selected = selected == 1,
-                    onClick = { selected = 1 }
-                )
-                NavigationBarItem(
-                    icon = { Text(text = "Set") },
-                    label = { Text("Settings") },
-                    selected = selected == 2,
-                    onClick = { selected = 2 }
-                )
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) {
+            when (selected) {
+                0 -> AgentScreen(settings)
+                1 -> TerminalScreen()
+                else -> SettingsScreen(settings)
             }
         }
+
+        BottomBar(selected = selected, onTabSelected = { selected = it })
+    }
+}
+
+@Composable
+private fun BottomBar(selected: Int, onTabSelected: (Int) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .background(MaterialTheme.colorScheme.surface),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        when (selected) {
-            0 -> AgentScreen(settings)
-            1 -> TerminalScreen()
-            else -> SettingsScreen(settings)
+        BottomTab(
+            text = "Chat",
+            selected = selected == 0,
+            onClick = { onTabSelected(0) }
+        )
+        BottomTab(
+            text = "Terminal",
+            selected = selected == 1,
+            onClick = { onTabSelected(1) }
+        )
+        BottomTab(
+            text = "Settings",
+            selected = selected == 2,
+            onClick = { onTabSelected(2) }
+        )
+    }
+}
+
+@Composable
+private fun BottomTab(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(vertical = 4.dp, horizontal = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (selected) {
+            Box(modifier = Modifier.size(4.dp).background(MaterialTheme.colorScheme.primary))
         }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

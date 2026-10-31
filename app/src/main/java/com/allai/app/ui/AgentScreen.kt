@@ -12,7 +12,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
@@ -37,10 +36,10 @@ fun AgentScreen(settings: SettingsState) {
         messages.add(Message(Role.System, settings.systemPrompt))
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
                 .padding(16.dp, 16.dp, 16.dp, 80.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -56,7 +55,6 @@ fun AgentScreen(settings: SettingsState) {
 
         Column(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
                 .padding(16.dp, 16.dp, 16.dp, 16.dp)
         ) {
             Row(modifier = Modifier.fillMaxWidth()) {
