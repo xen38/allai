@@ -16,22 +16,42 @@ fun SettingsScreen(settings: SettingsState) {
     var model by remember { mutableStateOf(settings.model) }
     var baseUrl by remember { mutableStateOf(settings.baseUrl) }
     var systemPrompt by remember { mutableStateOf(settings.systemPrompt) }
+    var dropdownOpen by remember { mutableStateOf(false) }
 
     val providers = listOf("openai", "anthropic", "google", "custom")
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(text = "Settings", style = MaterialTheme.typography.titleLarge)
 
         Text(text = "LLM Provider", style = MaterialTheme.typography.labelLarge)
-        androidx.compose.material3.DropdownMenu(
-            expanded = true,
-            onDismissRequest = {},
+
+        DropdownMenu(
+            expanded = dropdownOpen,
+            onDismissRequest = { dropdownOpen = false },
             modifier = Modifier.fillMaxWidth()
         ) {
             providers.forEach { p ->
-                androidx.compose.material3.DropdownMenuItem(
+                DropdownMenuItem(
                     text = { Text(p.uppercase()) },
-                    onClick = { provider = p }
+                    onClick = {
+                        provider = p
+                        dropdownOpen = false
+                    }
+                )
+            }
+        }
+
+        OutlinedButton(
+            onClick = { dropdownOpen = true },
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(text = provider.uppercase())
+                Text(
+                    text = "▼",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
         }
@@ -48,7 +68,7 @@ fun SettingsScreen(settings: SettingsState) {
             value = model,
             onValueChange = { model = it },
             label = { Text(text = "Model") },
-            placeholder = { Text(text = "gpt-4o") },
+            placeholder = { Text(text = "Nemotron 3 Ultra 550B A55B") },
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium
         )
@@ -56,7 +76,7 @@ fun SettingsScreen(settings: SettingsState) {
             value = baseUrl,
             onValueChange = { baseUrl = it },
             label = { Text(text = "Base URL") },
-            placeholder = { Text(text = "https://api.openai.com/v1/chat/completions") },
+            placeholder = { Text(text = "https://api.nvidia.com/v1") },
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium
         )
@@ -83,7 +103,8 @@ fun SettingsScreen(settings: SettingsState) {
                 )
             },
             modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.medium
+            shape = MaterialTheme.shapes.medium,
+            enabled = apiKey.isNotBlank()
         ) {
             Text(text = "Save")
         }
