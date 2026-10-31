@@ -53,22 +53,24 @@ private fun BottomBar(selected: Int, onTabSelected: (Int) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp)
             .background(MaterialTheme.colorScheme.surface),
-        horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
         BottomTab(
+            modifier = Modifier.weight(1f),
             text = "Chat",
             selected = selected == 0,
             onClick = { onTabSelected(0) }
         )
         BottomTab(
+            modifier = Modifier.weight(1f),
             text = "Terminal",
             selected = selected == 1,
             onClick = { onTabSelected(1) }
         )
         BottomTab(
+            modifier = Modifier.weight(1f),
             text = "Settings",
             selected = selected == 2,
             onClick = { onTabSelected(2) }
@@ -78,23 +80,26 @@ private fun BottomBar(selected: Int, onTabSelected: (Int) -> Unit) {
 
 @Composable
 private fun BottomTab(
+    modifier: Modifier = Modifier,
     text: String,
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
+    Box(
+        modifier = modifier
             .clickable { onClick() }
-            .padding(vertical = 12.dp, horizontal = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(vertical = 12.dp, horizontal = 16.dp),
+        contentAlignment = Alignment.Center
     ) {
-        if (selected) {
-            Box(modifier = Modifier.size(4.dp).background(MaterialTheme.colorScheme.primary))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (selected) {
+                Box(modifier = Modifier.size(4.dp).background(MaterialTheme.colorScheme.primary))
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
