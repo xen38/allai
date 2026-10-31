@@ -35,19 +35,19 @@ private fun MainNav() {
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Chat, contentDescription = null) },
+                    icon = { Text(text = "Chat") },
                     label = { Text("Chat") },
                     selected = selected == 0,
                     onClick = { selected = 0 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Terminal, contentDescription = null) },
+                    icon = { Text(text = "Term") },
                     label = { Text("Terminal") },
                     selected = selected == 1,
                     onClick = { selected = 1 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                    icon = { Text(text = "Set") },
                     label = { Text("Settings") },
                     selected = selected == 2,
                     onClick = { selected = 2 }

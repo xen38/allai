@@ -4,12 +4,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun SettingsScreen() {
-    val apiKey by remember { mutableStateOf("") }
-    val model by remember { mutableStateOf("") }
-    val baseUrl by remember { mutableStateOf("") }
+    var apiKey by remember { mutableStateOf("") }
+    var model by remember { mutableStateOf("") }
+    var baseUrl by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(text = "Settings", style = MaterialTheme.typography.titleLarge)

@@ -1,8 +1,10 @@
 package com.allai.app.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.allai.app.theme.AllaiTheme
@@ -15,16 +17,13 @@ fun Scaffold(
 ) {
     AllaiTheme {
         Column(modifier = modifier) {
-            val padding = contentPaddingValues()
             Box(modifier = Modifier.fillMaxSize()) {
-                content(padding)
+                content(PaddingValues(16.dp))
             }
             bottomBar()
         }
     }
 }
-
-private fun contentPaddingValues(): PaddingValues = PaddingValues(16.dp)
 
 @Composable
 fun EmptyScreen(title: String, subtitle: String, icon: @Composable () -> Unit) {

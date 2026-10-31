@@ -3,6 +3,9 @@ package com.allai.app.network
 import com.google.gson.Gson
 import java.io.IOException
 import okhttp3.*
+import okhttp3.logging.HttpLoggingInterceptor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object LlmClient {
     private val gson = Gson()
@@ -23,10 +26,11 @@ object LlmClient {
                 model = "gpt-4o-mini",
                 messages = messages.map { ChatMessage(if (it.role == com.allai.app.model.Role.User) "user" else "assistant", it.text) }
             )
-            val requestBody = RequestBody.create(gson.toJson(body), MediaType.get("application/json; charset=utf-8")!!)
+            val requestBody = RequestBody.create(null, gson.toJson(body))
             val request = Request.Builder()
                 .url(baseUrl)
                 .header("Authorization", "Bearer $apiKey")
+                .header("Content-Type", "application/json; charset=utf-8")
                 .post(requestBody)
                 .build()
             try {

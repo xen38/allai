@@ -1,20 +1,31 @@
 package com.allai.app.ui
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.allai.app.model.ToolResult
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.launch
 
 @Composable
 fun TerminalScreen() {
-    val log by remember { mutableStateListOf<String>() }
-    val command by remember { mutableStateOf("") }
+    val log = remember { mutableStateListOf<String>() }
+    var command by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(text = "Terminal", style = MaterialTheme.typography.titleLarge)
-        Spacer(modifier = Modifier.height(12.dp))
+        androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
 
         LazyColumn(
             modifier = Modifier
@@ -24,7 +35,7 @@ fun TerminalScreen() {
                 .padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            items(log) { line ->
+            items(log, key = { it }) { line ->
                 Text(
                     text = line,
                     style = MaterialTheme.typography.bodyMedium,
@@ -34,7 +45,7 @@ fun TerminalScreen() {
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
 
         Row(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
@@ -43,16 +54,16 @@ fun TerminalScreen() {
                 placeholder = { Text(text = "> ") },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
-                shape = MaterialTheme.shapes.medium,
-                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done)
+                shape = MaterialTheme.shapes.medium
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
             IconButton(onClick = {
                 if (command.isNotBlank()) {
-                    log.add("$command")
+                    val cmd = command
+                    log.add("$cmd")
                     scope.launch {
                         try {
-                            val result = com.allai.app.terminal.TerminalBridge.run(command)
+                            val result = com.allai.app.terminal.TerminalBridge.run(cmd)
                             log.add(result.output)
                             if (result.error.isNotEmpty()) log.add("ERR: ${result.error}")
                         } catch (e: Exception) {
@@ -62,7 +73,7 @@ fun TerminalScreen() {
                     command = ""
                 }
             }) {
-                Icon(imageVector = Icons.Default.Send, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text(text = "Send")
             }
         }
     }
