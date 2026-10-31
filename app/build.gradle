@@ -17,11 +17,20 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    signingConfigs {
+        release {
+            storeFile file("../allai-release.jks")
+            storePassword "allai123"
+            keyAlias "allai"
+            keyPassword "allai123"
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
         debug {
             applicationIdSuffix ".debug"
