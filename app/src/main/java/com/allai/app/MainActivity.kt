@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.allai.app.settings.SettingsState
 import com.allai.app.theme.AllaiTheme
 import com.allai.app.ui.AgentScreen
 import com.allai.app.ui.TerminalScreen
@@ -20,16 +21,17 @@ import com.allai.app.ui.Scaffold
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val settings = SettingsState(this)
         setContent {
             AllaiTheme {
-                MainNav()
+                MainNav(settings)
             }
         }
     }
 }
 
 @Composable
-private fun MainNav() {
+private fun MainNav(settings: SettingsState) {
     var selected by remember { mutableIntStateOf(0) }
     Scaffold(
         bottomBar = {
@@ -56,9 +58,9 @@ private fun MainNav() {
         }
     ) {
         when (selected) {
-            0 -> AgentScreen()
+            0 -> AgentScreen(settings)
             1 -> TerminalScreen()
-            else -> SettingsScreen()
+            else -> SettingsScreen(settings)
         }
     }
 }

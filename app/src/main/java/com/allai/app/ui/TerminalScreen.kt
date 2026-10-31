@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
+import com.allai.app.terminal.TerminalBridge
 
 @Composable
 fun TerminalScreen() {
@@ -63,7 +64,7 @@ fun TerminalScreen() {
                     log.add("$cmd")
                     scope.launch {
                         try {
-                            val result = com.allai.app.terminal.TerminalBridge.run(cmd)
+                            val result = TerminalBridge.run(cmd)
                             log.add(result.output)
                             if (result.error.isNotEmpty()) log.add("ERR: ${result.error}")
                         } catch (e: Exception) {

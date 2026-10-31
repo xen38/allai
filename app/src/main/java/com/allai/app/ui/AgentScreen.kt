@@ -19,22 +19,38 @@ import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
 import com.allai.app.model.Message
 import com.allai.app.model.Role
+import com.allai.app.agent.AgentLoop
+import com.allai.app.model.LlmProvider
+import com.allai.app.plugin.PluginManager
+import com.allai.app.settings.SettingsState
 
 @Composable
-fun AgentScreen() {
+fun AgentScreen(settings: SettingsState) {
     val messages = remember { mutableStateListOf<Message>() }
     var input by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+    val agent = remember { AgentLoop() }
+
+    val initialized = remember { mutableStateOf(false) }
+    if (!initialized.value) {
+        initialized.value = true
+        messages.add(Message(Role.System, settings.systemPrompt))
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        androidx.compose.foundation.lazy.LazyColumn(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp, 16.dp, 16.dp, 80.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(messages, key = { it.hashCode().toString() }) { msg ->
-                MessageBubble(message = msg)
+                when (msg.role) {
+                    Role.User -> UserBubble(msg.text)
+                    Role.Agent -> AgentBubble(msg.text)
+                    Role.Tool -> ToolBubble(msg.text)
+                    Role.System -> {}
+                }
             }
         }
 
@@ -47,7 +63,7 @@ fun AgentScreen() {
                 OutlinedTextField(
                     value = input,
                     onValueChange = { input = it },
-                    placeholder = { Text(text = "Type a message…") },
+                    placeholder = { Text(text = "Message Allai…") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     shape = MaterialTheme.shapes.medium
@@ -60,7 +76,11 @@ fun AgentScreen() {
                         messages.add(Message(Role.User, text))
                         scope.launch {
                             try {
-                                val reply = com.allai.app.network.LlmClient.sendMessage(messages.toList())
+                                val config = AgentLoop.AgentConfig(
+                                    provider = settings.provider,
+                                    systemPrompt = settings.systemPrompt
+                                )
+                                val reply = agent.run(config, messages.toList())
                                 messages.add(Message(Role.Agent, reply))
                             } catch (e: Exception) {
                                 messages.add(Message(Role.Agent, "Error: ${e.message}"))
@@ -76,22 +96,60 @@ fun AgentScreen() {
 }
 
 @Composable
-private fun MessageBubble(message: Message) {
-    val isUser = message.role == Role.User
-    val bubbleColor = if (isUser) Color(0xFF1E293B) else Color(0xFF1E1B4B)
+private fun UserBubble(text: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+        horizontalArrangement = Arrangement.End
     ) {
         Column {
             Text(
-                text = message.text,
+                text = text,
                 modifier = Modifier
                     .padding(12.dp, 8.dp)
-                    .background(bubbleColor, MaterialTheme.shapes.large)
+                    .background(Color(0xFF1E293B), MaterialTheme.shapes.large)
                     .padding(horizontal = 4.dp),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = Color.White,
                 style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@Composable
+private fun AgentBubble(text: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Column {
+            Text(
+                text = text,
+                modifier = Modifier
+                    .padding(12.dp, 8.dp)
+                    .background(Color(0xFF1E1B4B), MaterialTheme.shapes.large)
+                    .padding(horizontal = 4.dp),
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@Composable
+private fun ToolBubble(text: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Column {
+            Text(
+                text = text,
+                modifier = Modifier
+                    .padding(12.dp, 8.dp)
+                    .background(Color(0xFF14532D), MaterialTheme.shapes.large)
+                    .padding(horizontal = 4.dp),
+                color = Color.White,
+                style = MaterialTheme.typography.bodySmall
             )
         }
     }

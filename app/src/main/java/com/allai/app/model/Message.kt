@@ -1,6 +1,6 @@
 package com.allai.app.model
 
-enum class Role { User, Agent, Tool }
+enum class Role { User, Agent, Tool, System }
 
 data class Message(val role: Role, val text: String, val timestamp: Long = System.currentTimeMillis())
 
@@ -18,4 +18,12 @@ data class ToolResult(
     val output: String,
     val error: String = "",
     val ok: Boolean = true
+)
+
+data class LlmProvider(
+    val name: String,
+    val baseUrl: String,
+    val model: String,
+    val apiKey: String,
+    val isOpenAiCompatible: Boolean = true
 )
