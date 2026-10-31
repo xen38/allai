@@ -85,7 +85,7 @@ private fun BottomTab(
     Column(
         modifier = Modifier
             .clickable { onClick() }
-            .padding(vertical = 4.dp, horizontal = 8.dp),
+            .padding(vertical = 12.dp, horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (selected) {
