@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Allai — Native Android AI Agent</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0b1120; color: #f1f5f9; line-height: 1.6; }
+        .container { max-width: 720px; margin: 0 auto; padding: 48px 20px; }
+        h1 { font-size: 2.5rem; margin-bottom: 12px; background: linear-gradient(90deg, #818cf8, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { font-size: 1.125rem; color: #94a3b8; margin-bottom: 32px; }
+        .card { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+        .card h3 { color: #818cf8; margin-bottom: 8px; font-size: 1.125rem; }
+        .card p { color: #cbd5e1; font-size: 0.9375rem; }
+        .features { display: grid; gap: 12px; margin-top: 16px; }
+        .feature { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9375rem; color: #cbd5e1; }
+        .feature b { color: #f8fafc; }
+        a.btn { display: inline-block; background: #6366f1; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; margin-top: 12px; }
+        a.btn:hover { background: #4f46e5; }
+        .badge { display: inline-block; background: #1e293b; color: #818cf8; border: 1px solid #334155; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; margin-right: 8px; }
+        .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid #334155; font-size: 0.875rem; color: #64748b; }
+        code { background: #1e293b; padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #22d3ee; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Allai</h1>
+    <p class="subtitle">Open-source AI agent for Android, native and Opencode-inspired.</p>
+
+    <div class="card">
+        <h3>What is Allai?</h3>
+        <p>Allai is an open-source AI agent built native for Android. Inspired by <a href="https://github.com/anomalyco/opencode" style="color:#818cf8">Opencode</a>, it runs entirely on your device with an embedded terminal, an MCP/plugin system to control other apps, and an LLM-driven agent loop.</p>
+    </div>
+
+    <div class="card">
+        <h3>Features</h3>
+        <div class="features">
+            <div class="feature"><b>&#10003;</b> Compose-based chat UI</div>
+            <div class="feature"><b>&#10003;</b> Embedded shell terminal (<code>sh -c</code>)</div>
+            <div class="feature"><b>&#10003;</b> MCP client (JSON-RPC over stdio)</div>
+            <div class="feature"><b>&#10003;</b> Phone plugins: contacts, SMS, app launcher</div>
+            <div class="feature"><b>&#10003;</b> OpenAI-compatible LLM client</div>
+            <div class="feature"><b>&#10003;</b> MIT licensed</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Quick start</h3>
+        <p>Open the project in Android Studio and build:</p>
+        <code>./gradlew assembleDebug</code><br>
+        <code>./gradlew installDebug</code>
+        <p style="margin-top:12px">Release bundle (signed):</p>
+        <code>./gradlew bundleRelease</code>
+    </div>
+
+    <div class="card">
+        <h3>Links</h3>
+        <span class="badge">MIT License</span>
+        <span class="badge">Android 5.0+ (minSdk 24)</span>
+        <a class="btn" href="https://github.com/xen38/allai" target="_blank">View on GitHub</a>
+    </div>
+
+    <div class="footer">
+        Allai &middot; Open-source AI agent for Android &middot; <a href="https://github.com/xen38/allai" style="color:#818cf8" target="_blank">github.com/xen38/allai</a>
+    </div>
+</div>
+</body>
+</html>
