@@ -3,6 +3,8 @@ package com.allai.app.ui
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focus.FocusRequester
+import androidx.compose.foundation.focus.requestFocus
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import kotlinx.coroutines.launch
 import com.allai.app.model.Message
 import com.allai.app.model.Role
@@ -29,11 +33,15 @@ fun AgentScreen(settings: SettingsState) {
     var input by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val agent = remember { AgentLoop() }
+    val focusRequester = remember { FocusRequester() }
 
     val initialized = remember { mutableStateOf(false) }
     if (!initialized.value) {
         initialized.value = true
         messages.add(Message(Role.System, settings.systemPrompt))
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -62,9 +70,31 @@ fun AgentScreen(settings: SettingsState) {
                     value = input,
                     onValueChange = { input = it },
                     placeholder = { Text(text = "Message Allai…") },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester),
                     singleLine = true,
-                    shape = MaterialTheme.shapes.medium
+                    shape = MaterialTheme.shapes.medium,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    onImeAction = {
+                        if (it == ImeAction.Send && input.isNotBlank()) {
+                            val text = input
+                            input = ""
+                            messages.add(Message(Role.User, text))
+                            scope.launch {
+                                try {
+                                    val config = AgentLoop.AgentConfig(
+                                        provider = settings.provider,
+                                        systemPrompt = settings.systemPrompt
+                                    )
+                                    val reply = agent.run(config, messages.toList())
+                                    messages.add(Message(Role.Agent, reply))
+                                } catch (e: Exception) {
+                                    messages.add(Message(Role.Agent, "Error: ${e.message}"))
+                                }
+                            }
+                        }
+                    }
                 )
                 androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
                 IconButton(onClick = {

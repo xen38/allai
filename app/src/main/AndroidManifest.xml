@@ -39,7 +39,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Allai"
-            android:windowSoftInputMode="adjustResize|stateHidden"
+            android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait"
             android:launchMode="singleTop">
             <intent-filter>
