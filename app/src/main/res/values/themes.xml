@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Allai" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/allai_primary</item>
+        <item name="colorPrimaryContainer">@color/allai_primary_container</item>
+        <item name="colorSecondary">@color/allai_secondary</item>
+        <item name="colorSecondaryContainer">@color/allai_secondary_container</item>
+        <item name="colorSurface">@color/allai_surface</item>
+        <item name="colorBackground">@color/allai_background</item>
+        <item name="colorOnSurface">@color/allai_on_surface</item>
+        <item name="colorOnBackground">@color/allai_on_background</item>
+        <item name="android:windowBackground">@color/allai_background</item>
+        <item name="colorError">@color/allai_error</item>
+    </style>
+</resources>

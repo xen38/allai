@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="allai_primary">#6366f1</color>
+    <color name="allai_primary_container">#e0e7ff</color>
+    <color name="allai_secondary">#0ea5e9</color>
+    <color name="allai_secondary_container">#cffafe</color>
+    <color name="allai_surface">#0f172a</color>
+    <color name="allai_background">#0b1120</color>
+    <color name="allai_on_surface">#f8fafc</color>
+    <color name="allai_on_background">#f1f5f9</color>
+    <color name="allai_error">#ef4444</color>
+    <color name="allai_user_bubble">#1e293b</color>
+    <color name="allai_agent_bubble">#1e1b4b</color>
+    <color name="allai_tool_bubble">#14532d</color>
+    <color name="allai_text_muted">#94a3b8</color>
+</resources>

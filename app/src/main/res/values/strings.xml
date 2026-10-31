@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Allai</string>
+    <string name="send">Send</string>
+    <string name="placeholder">Type a message…</string>
+    <string name="terminal_label">Terminal</string>
+    <string name="mcp_label">MCP / Plugins</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="settings">Settings</string>
+    <string name="api_key_hint">LLM API key</string>
+    <string name="model_hint">Model id</string>
+    <string name="base_url_hint">Base URL (optional)</string>
+    <string name="permission_rationale">Allai needs access to files and other apps to complete tasks via MCP plugins.</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+</resources>

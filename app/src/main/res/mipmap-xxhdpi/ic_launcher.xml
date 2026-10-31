@@ -1,0 +1,6 @@
+<resources>
+    <mipmap ip="xxhdpi">
+        <mipmap name="ic_launcher" resource="@drawable/ic_launcher" />
+        <mipmap name="ic_launcher_round" resource="@drawable/ic_launcher_round" />
+    </mipmap>
+</resources>

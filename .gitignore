@@ -1,0 +1,20 @@
+*.apk
+*.aab
+*.dex
+.gradle/
+build/
+captures/
+.idea/
+*.iml
+*.ipr
+*.iws
+local.properties
+*.keystore
+.jks
+.DS_Store
+*.log
+# Kotlin
+*.kotlin_module
+# Swift / Xcode
+*.xcodeproj/
+*.xcuserdata/
