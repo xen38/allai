@@ -1,5 +1,6 @@
 package com.allai.app
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,15 +11,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.allai.app.settings.SettingsState
 import com.allai.app.theme.AllaiTheme
 import com.allai.app.ui.AgentScreen
-import com.allai.app.ui.TerminalScreen
+import com.allai.app.ui.OnboardingScreen
 import com.allai.app.ui.SettingsTabsScreen
+import com.allai.app.ui.TerminalScreen
 import com.allai.app.ui.MemoriesScreen
-import com.allai.app.ui.Scaffold
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,19 +35,29 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun MainNav(settings: SettingsState) {
-    var selected by remember { mutableIntStateOf(0) }
+    val context = LocalContext.current
+    val prefs: SharedPreferences = context.getSharedPreferences("allai_onboarding", android.content.Context.MODE_PRIVATE)
+    val onboardingComplete by remember { mutableStateOf(prefs.getBoolean("onboarding_complete", false)) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.weight(1f)) {
-            when (selected) {
-                0 -> AgentScreen(settings)
-                1 -> TerminalScreen()
-                2 -> SettingsTabsScreen(settings, { selected = it })
-                3 -> MemoriesScreen()
+    if (!onboardingComplete || settings.apiKey.isBlank()) {
+        OnboardingScreen(onComplete = {
+            prefs.edit().putBoolean("onboarding_complete", true).apply()
+        })
+    } else {
+        var selected by remember { mutableIntStateOf(0) }
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f)) {
+                when (selected) {
+                    0 -> AgentScreen(settings)
+                    1 -> TerminalScreen()
+                    2 -> SettingsTabsScreen(settings, { selected = it })
+                    3 -> MemoriesScreen()
+                }
             }
-        }
 
-        BottomBar(selected = selected, onTabSelected = { selected = it })
+            BottomBar(selected = selected, onTabSelected = { selected = it })
+        }
     }
 }
 
