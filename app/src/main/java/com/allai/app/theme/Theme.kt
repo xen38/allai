@@ -30,9 +30,7 @@ private val DarkColorScheme = darkColorScheme(
     outline = Color(0xFF334155),
     inverseSurface = Color(0xFFF1F5F9),
     inverseOnSurface = Color(0xFF0B1120),
-    inversePrimary = Color(0xFF81ECCC),
-    surfaceDim = Color(0xFF0B1120),
-    surfaceBright = Color(0xFF0F172A)
+    inversePrimary = Color(0xFF81ECCC)
 )
 
 private val LightColorScheme = lightColorScheme()

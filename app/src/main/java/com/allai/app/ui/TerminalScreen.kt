@@ -2,22 +2,21 @@ package com.allai.app.ui
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focus.FocusRequester
-import androidx.compose.foundation.focus.requestFocus
+import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import kotlinx.coroutines.launch
 import com.allai.app.terminal.TerminalBridge
 
@@ -57,32 +56,15 @@ fun TerminalScreen() {
         androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
 
         Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
+            BasicTextField(
                 value = command,
                 onValueChange = { command = it },
-                placeholder = { Text(text = "> ") },
                 modifier = Modifier
                     .weight(1f)
-                    .focusRequester(focusRequester),
-                singleLine = true,
-                shape = MaterialTheme.shapes.medium,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                onImeAction = {
-                    if (it == ImeAction.Send && command.isNotBlank()) {
-                        val cmd = command
-                        log.add("$cmd")
-                        scope.launch {
-                            try {
-                                val result = TerminalBridge.run(cmd)
-                                log.add(result.output)
-                                if (result.error.isNotEmpty()) log.add("ERR: ${result.error}")
-                            } catch (e: Exception) {
-                                log.add("ERR: ${e.message}")
-                            }
-                        }
-                        command = ""
-                    }
-                }
+                    .focusRequester(focusRequester)
+                    .padding(vertical = 8.dp)
+                    .background(Color(0xFFF8FAFC), MaterialTheme.shapes.medium)
+                    .padding(12.dp),
             )
             androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
             IconButton(onClick = {

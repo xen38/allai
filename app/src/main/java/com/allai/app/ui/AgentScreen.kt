@@ -3,25 +3,20 @@ package com.allai.app.ui
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focus.FocusRequester
-import androidx.compose.foundation.focus.requestFocus
-import androidx.compose.foundation.onKeyEvent
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import kotlinx.coroutines.launch
 import com.allai.app.model.Message
 import com.allai.app.model.Role
@@ -89,29 +84,15 @@ fun AgentScreen(settings: SettingsState) {
                 .padding(16.dp, 16.dp, 16.dp, 16.dp)
         ) {
             Row(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
+                BasicTextField(
                     value = input,
                     onValueChange = { input = it },
-                    placeholder = { Text(text = "Message Allai…") },
                     modifier = Modifier
                         .weight(1f)
-                        .focusRequester(focusRequester),
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.medium,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    onImeAction = {
-                        if (it == ImeAction.Send) {
-                            sendMessage()
-                        }
-                    },
-                    onKeyEvent = { keyEvent ->
-                        if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.Enter) {
-                            sendMessage()
-                            true
-                        } else {
-                            false
-                        }
-                    }
+                        .focusRequester(focusRequester)
+                        .padding(vertical = 8.dp)
+                        .background(Color(0xFFF8FAFC), MaterialTheme.shapes.medium)
+                        .padding(12.dp),
                 )
                 androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
                 IconButton(onClick = {
