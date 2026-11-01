@@ -12,11 +12,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,10 +73,25 @@ fun AgentScreen(settings: SettingsState) {
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         val context = LocalContext.current
+
+        // Bubble mode button - top right, small
+        BubbleButton(
+            onClick = {
+                if (!android.provider.Settings.canDrawOverlays(context)) {
+                    val intent = Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:${context.packageName}"))
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                } else {
+                    context.startService(Intent(context, FloatingWindowService::class.java))
+                }
+            }
+        )
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp, 16.dp, 16.dp, 80.dp),
+                .padding(16.dp, 72.dp, 16.dp, 80.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(messages, key = { it.hashCode().toString() }) { msg ->
@@ -91,55 +104,59 @@ fun AgentScreen(settings: SettingsState) {
             }
         }
 
-        Column(
+        Box(
             modifier = Modifier
                 .padding(16.dp, 16.dp, 16.dp, 16.dp)
-                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.BottomCenter
         ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                BasicTextField(
-                    value = input,
-                    onValueChange = { input = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .focusRequester(focusRequester)
-                        .padding(vertical = 10.dp)
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFF1A102E),
-                                    Color(0xFF0F0A1E)
-                                )
-                            ),
-                            MaterialTheme.shapes.large
-                        )
-                        .border(1.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.large)
-                        .padding(12.dp),
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 14.sp)
-                )
-                androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
-                IconButton(onClick = {
-                    sendMessage()
-                }) {
-                    Text(text = "➤", color = MaterialTheme.colorScheme.primary)
+            Column {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    BasicTextField(
+                        value = input,
+                        onValueChange = { input = it },
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(focusRequester)
+                            .padding(vertical = 10.dp)
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF1A102E),
+                                        Color(0xFF0F0A1E)
+                                    )
+                                ),
+                                MaterialTheme.shapes.large
+                            )
+                            .border(1.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.large)
+                            .padding(12.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 14.sp)
+                    )
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(onClick = {
+                        sendMessage()
+                    }) {
+                        Text(text = "➤", color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
         }
+    }
+}
 
-        FloatingActionButton(
-            onClick = {
-                if (!android.provider.Settings.canDrawOverlays(context)) {
-                    val intent = Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:${context.packageName}"))
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(intent)
-                } else {
-                    context.startService(Intent(context, FloatingWindowService::class.java))
-                }
-            },
-            modifier = Modifier.align(Alignment.BottomEnd)
+@Composable
+private fun BubbleButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxSize(),
+        contentAlignment = Alignment.TopEnd
+    ) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.size(48.dp)
         ) {
-            Text(text = "🫧", style = MaterialTheme.typography.displaySmall)
+            Text(text = "🫧", fontSize = 20.sp)
         }
     }
 }
