@@ -1,24 +1,42 @@
 package com.allai.app.floating
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.IBinder
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.allai.app.AllaiApplication
 import com.allai.app.theme.AllaiTheme
 import com.allai.app.settings.SettingsState
+import com.allai.app.agent.AgentLoop
+import com.allai.app.model.Message
+import com.allai.app.model.Role
 
 class FloatingWindowService : Service() {
     private lateinit var windowManager: WindowManager
@@ -42,16 +60,16 @@ class FloatingWindowService : Service() {
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.TOP or Gravity.START
         params.x = 20
         params.y = 100
-        params.width = 400
-        params.height = 600
+        params.width = 380
+        params.height = 520
 
         overlayView = ComposeView(this).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
@@ -59,6 +77,24 @@ class FloatingWindowService : Service() {
                 AllaiTheme {
                     FloatingChatOverlay(onClose = { stopSelf() })
                 }
+            }
+        }
+
+        overlayView.setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    params.x = event.rawX.toInt() - overlayView.width / 2
+                    params.y = event.rawY.toInt() - overlayView.height / 2
+                    windowManager.updateViewLayout(overlayView, params)
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    params.x = event.rawX.toInt() - overlayView.width / 2
+                    params.y = event.rawY.toInt() - overlayView.height / 2
+                    windowManager.updateViewLayout(overlayView, params)
+                    true
+                }
+                else -> false
             }
         }
 
@@ -70,23 +106,118 @@ class FloatingWindowService : Service() {
             windowManager.removeView(overlayView)
         } catch (e: Exception) { }
     }
+
+    companion object {
+        fun start(context: Context) {
+            context.startService(Intent(context, FloatingWindowService::class.java))
+        }
+
+        fun stop(context: Context) {
+            context.stopService(Intent(context, FloatingWindowService::class.java))
+        }
+    }
 }
 
 @Composable
 private fun FloatingChatOverlay(onClose: () -> Unit) {
-    Box(
+    val context = LocalContext.current
+    val settings = SettingsState(context)
+    val messages = mutableStateListOf<String>()
+    val inputState = remember { mutableStateOf<String>("") }
+    val scope = rememberCoroutineScope()
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
-        contentAlignment = Alignment.TopStart
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.large),
     ) {
-        IconButton(onClick = onClose) {
-            Text(text = "✕")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "🫧 Allai",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            IconButton(onClick = onClose) {
+                Text(text = "✕")
+            }
         }
-        Text(
-            text = "Allai Floating",
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(top = 56.dp, start = 16.dp)
-        )
+
+        Divider()
+
+        LazyColumn(
+            modifier = Modifier.weight(1f).padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            items(
+                items = messages,
+                key = { message -> message.hashCode().toString() }
+            ) { message ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = if (message.startsWith("You:")) Arrangement.End else Arrangement.Start
+                ) {
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .padding(8.dp, 6.dp)
+                            .background(
+                                if (message.startsWith("You:")) Color(0xFF4A148C) else Color(0xFF003366),
+                                MaterialTheme.shapes.medium
+                            )
+                    )
+                }
+            }
+        }
+
+        Divider()
+
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BasicTextField(
+                value = inputState.value,
+                onValueChange = { newValue -> inputState.value = newValue },
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 6.dp)
+                    .background(Color(0xFF1A102E), MaterialTheme.shapes.medium)
+                    .padding(8.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 12.sp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            IconButton(onClick = {
+                if (inputState.value.isNotBlank()) {
+                    messages.add("You: ${inputState.value}")
+                    val text = inputState.value
+                    inputState.value = ""
+                    scope.launch {
+                        try {
+                            val agent = AgentLoop()
+                            val config = AgentLoop.AgentConfig(
+                                provider = settings.provider,
+                                systemPrompt = settings.systemPrompt
+                            )
+                            val reply = agent.run(config, messages.map { Message(Role.User, it) }.toList())
+                            messages.add("Allai: $reply")
+                        } catch (e: Exception) {
+                            messages.add("Allai: Error: ${e.message}")
+                        }
+                    }
+                }
+            }) {
+                Text(text = "➤", color = MaterialTheme.colorScheme.primary)
+            }
+        }
     }
 }
