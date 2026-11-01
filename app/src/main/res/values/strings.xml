@@ -21,4 +21,5 @@
     <string name="tool_calling">Tool calling</string>
     <string name="save">Save</string>
     <string name="clear_chat">Clear chat</string>
+    <string name="accessibility_service_description">Allai Accessibility Service - reads screen content and interacts with any app UI</string>
 </resources>

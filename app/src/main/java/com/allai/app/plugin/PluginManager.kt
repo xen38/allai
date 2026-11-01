@@ -7,6 +7,8 @@ import android.database.Cursor
 import android.net.Uri
 import android.provider.ContactsContract
 import android.telephony.SmsManager
+import com.allai.app.accessibility.AccessibilityPlugin
+import com.allai.app.self.SelfPlugin
 import com.allai.app.AllaiApplication
 import com.allai.app.model.ToolResult
 import java.io.File
@@ -28,6 +30,8 @@ object PluginManager {
         register(SmsPlugin(context))
         register(LauncherPlugin(context))
         register(McpPlugin())
+        register(AccessibilityPlugin())
+        register(SelfPlugin(context))
     }
 
     fun register(plugin: PhonePlugin) {
