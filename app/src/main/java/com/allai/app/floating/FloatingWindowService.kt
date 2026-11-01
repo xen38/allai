@@ -12,7 +12,6 @@ import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
@@ -37,14 +36,23 @@ import com.allai.app.settings.SettingsState
 import com.allai.app.agent.AgentLoop
 import com.allai.app.model.Message
 import com.allai.app.model.Role
+import com.allai.app.theme.*
 
 class FloatingWindowService : Service() {
     private lateinit var windowManager: WindowManager
     private lateinit var overlayView: View
+    private var params: WindowManager.LayoutParams? = null
+    private var initialTouchX: Float = 0f
+    private var initialTouchY: Float = 0f
+    private var initialParamsX: Int = 0
+    private var initialParamsY: Int = 0
 
     override fun onBind(intent: Intent): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (::overlayView.isInitialized) {
+            return START_STICKY
+        }
         showOverlay()
         return START_STICKY
     }
@@ -56,7 +64,7 @@ class FloatingWindowService : Service() {
 
     private fun showOverlay() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        val params = WindowManager.LayoutParams(
+        params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
@@ -65,11 +73,11 @@ class FloatingWindowService : Service() {
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         )
-        params.gravity = Gravity.TOP or Gravity.START
-        params.x = 20
-        params.y = 100
-        params.width = 380
-        params.height = 520
+        params!!.gravity = Gravity.TOP or Gravity.START
+        params!!.x = 20
+        params!!.y = 100
+        params!!.width = 360
+        params!!.height = 560
 
         overlayView = ComposeView(this).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
@@ -83,22 +91,23 @@ class FloatingWindowService : Service() {
         overlayView.setOnTouchListener { _, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    params.x = event.rawX.toInt() - overlayView.width / 2
-                    params.y = event.rawY.toInt() - overlayView.height / 2
-                    windowManager.updateViewLayout(overlayView, params)
+                    initialTouchX = event.rawX
+                    initialTouchY = event.rawY
+                    initialParamsX = params!!.x
+                    initialParamsY = params!!.y
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    params.x = event.rawX.toInt() - overlayView.width / 2
-                    params.y = event.rawY.toInt() - overlayView.height / 2
-                    windowManager.updateViewLayout(overlayView, params)
+                    params!!.x = (initialParamsX + (event.rawX - initialTouchX)).toInt()
+                    params!!.y = (initialParamsY + (event.rawY - initialTouchY)).toInt()
+                    windowManager.updateViewLayout(overlayView, params!!)
                     true
                 }
                 else -> false
             }
         }
 
-        windowManager.addView(overlayView, params)
+        windowManager.addView(overlayView, params!!)
     }
 
     private fun hideOverlay() {
@@ -129,6 +138,8 @@ private fun FloatingChatOverlay(onClose: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .width(340.dp)
+            .height(540.dp)
             .background(MaterialTheme.colorScheme.surface)
             .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.large),
     ) {
@@ -150,7 +161,7 @@ private fun FloatingChatOverlay(onClose: () -> Unit) {
             }
         }
 
-        Divider()
+        HorizontalDivider()
 
         LazyColumn(
             modifier = Modifier.weight(1f).padding(8.dp),
@@ -179,7 +190,7 @@ private fun FloatingChatOverlay(onClose: () -> Unit) {
             }
         }
 
-        Divider()
+        HorizontalDivider()
 
         Row(
             modifier = Modifier.padding(8.dp),
@@ -199,7 +210,6 @@ private fun FloatingChatOverlay(onClose: () -> Unit) {
             IconButton(onClick = {
                 if (inputState.value.isNotBlank()) {
                     messages.add("You: ${inputState.value}")
-                    val text = inputState.value
                     inputState.value = ""
                     scope.launch {
                         try {

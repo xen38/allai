@@ -257,7 +257,7 @@ class McpPlugin : PhonePlugin {
                 ToolResult(
                     callId = "",
                     output = com.google.gson.Gson().toJson(response?.result),
-                    error = if (response?.error != null) response.error!!.message else "",
+                    error = response?.error?.message ?: "",
                     ok = response?.error == null
                 )
             }

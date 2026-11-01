@@ -81,7 +81,7 @@ fun SettingsScreen(settings: SettingsState) {
             shape = MaterialTheme.shapes.medium
         )
 
-        Divider()
+        HorizontalDivider()
 
         Text(text = "System Prompt", style = MaterialTheme.typography.labelLarge)
         OutlinedTextField(

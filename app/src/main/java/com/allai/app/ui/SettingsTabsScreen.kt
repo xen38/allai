@@ -1,39 +1,45 @@
 package com.allai.app.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.ui.platform.LocalContext
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.allai.app.theme.AllaiTheme
 import com.allai.app.settings.SettingsState
+import com.allai.app.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsTabsScreen(settings: SettingsState, onTabSelected: (Int) -> Unit) {
     var selected by remember { mutableIntStateOf(0) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().background(AllaiBackground)) {
+        TopAppBar(
+            title = { Text(text = "Settings", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground) },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = AllaiBackground),
+            modifier = Modifier.fillMaxWidth()
+        )
+
         Column(
             modifier = Modifier
                 .weight(1f)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = "Settings",
-                style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
             when (selected) {
                 0 -> ProviderSettingsScreen(settings)
                 1 -> AgentSettingsScreen(settings)
@@ -43,38 +49,60 @@ fun SettingsTabsScreen(settings: SettingsState, onTabSelected: (Int) -> Unit) {
             }
         }
 
-        TabRow(
+        PrimaryTabRow(
             selectedTabIndex = selected,
             modifier = Modifier.fillMaxWidth()
         ) {
             Tab(
                 selected = selected == 0,
                 onClick = { selected = 0; onTabSelected(0) },
-                text = { Text(text = "Provider") }
+                text = { Text(text = "Provider", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             )
             Tab(
                 selected = selected == 1,
                 onClick = { selected = 1; onTabSelected(1) },
-                text = { Text(text = "Agent") }
+                text = { Text(text = "Agent", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             )
             Tab(
                 selected = selected == 2,
                 onClick = { selected = 2; onTabSelected(2) },
-                text = { Text(text = "Security") }
+                text = { Text(text = "Security", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             )
             Tab(
                 selected = selected == 3,
                 onClick = { selected = 3; onTabSelected(3) },
-                text = { Text(text = "Account") }
+                text = { Text(text = "Account", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             )
             Tab(
                 selected = selected == 4,
                 onClick = { selected = 4; onTabSelected(4) },
-                text = { Text(text = "Integrations") }
+                text = { Text(text = "Integrations", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             )
         }
     }
 }
+
+@Composable
+fun Modifier.glassCard(): Modifier = this
+    .background(
+        androidx.compose.ui.graphics.Brush.linearGradient(
+            colors = listOf(
+                Color(0xFF1A102E).copy(alpha = 0.8f),
+                Color(0xFF0F0A1E).copy(alpha = 0.9f)
+            )
+        ),
+        MaterialTheme.shapes.large
+    )
+    .border(
+        1.dp,
+        androidx.compose.ui.graphics.Brush.linearGradient(
+            colors = listOf(
+                Color(0xFF7B2CBF).copy(alpha = 0.4f),
+                Color(0xFF00D4FF).copy(alpha = 0.4f)
+            )
+        ),
+        MaterialTheme.shapes.large
+    )
 
 @Composable
 fun ProviderSettingsScreen(settings: SettingsState) {
@@ -88,16 +116,28 @@ fun ProviderSettingsScreen(settings: SettingsState) {
     val providers = listOf("openai", "anthropic", "google", "custom")
 
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(text = "LLM Provider", style = MaterialTheme.typography.titleLarge)
-        Text(text = "Configure which AI provider Allai uses to think.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = "LLM Provider",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "Configure which AI provider Allai uses to think.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().glassCard(),
             shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1A102E))
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(text = "Provider", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = "Provider",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
                 DropdownMenu(
                     expanded = dropdownOpen,
@@ -121,7 +161,7 @@ fun ProviderSettingsScreen(settings: SettingsState) {
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(text = provider.uppercase())
+                        Text(text = provider.uppercase(), color = MaterialTheme.colorScheme.onSurface)
                         Text(
                             text = "▼",
                             color = MaterialTheme.colorScheme.primary,
@@ -158,9 +198,13 @@ fun ProviderSettingsScreen(settings: SettingsState) {
                     singleLine = true
                 )
 
-                Divider()
+                HorizontalDivider()
 
-                Text(text = "System Prompt", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = "System Prompt",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 OutlinedTextField(
                     value = systemPrompt,
                     onValueChange = { systemPrompt = it },
@@ -193,17 +237,32 @@ fun ProviderSettingsScreen(settings: SettingsState) {
 @Composable
 fun AgentSettingsScreen(settings: SettingsState) {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(text = "Agent", style = MaterialTheme.typography.titleLarge)
-        Text(text = "Memories, skills, and everything the Allai agent knows about you.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = "Agent",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "Memories, skills, and everything the Allai agent knows about you.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().glassCard(),
             shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1A102E))
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(text = "Memories", style = MaterialTheme.typography.labelLarge)
-                Text(text = "Allai learns from your actions and stores memories so it can replicate them.", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = "Memories",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Allai learns from your actions and stores memories so it can replicate them.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
                 Button(
                     onClick = { },
                     modifier = Modifier.fillMaxWidth(),
@@ -212,8 +271,15 @@ fun AgentSettingsScreen(settings: SettingsState) {
                     Text(text = "Open Memories Tab")
                 }
 
-                Text(text = "Skills", style = MaterialTheme.typography.labelLarge)
-                Text(text = "Teach Allai new capabilities it can perform on your phone.", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = "Skills",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Teach Allai new capabilities it can perform on your phone.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
                 Button(
                     onClick = { },
                     modifier = Modifier.fillMaxWidth(),
@@ -222,7 +288,11 @@ fun AgentSettingsScreen(settings: SettingsState) {
                     Text(text = "Manage Skills")
                 }
 
-                Text(text = "Custom Instructions", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = "Custom Instructions",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 OutlinedTextField(
                     value = settings.systemPrompt,
                     onValueChange = { settings.systemPrompt = it },
@@ -238,16 +308,28 @@ fun AgentSettingsScreen(settings: SettingsState) {
 @Composable
 fun SecuritySettingsScreen() {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(text = "Security", style = MaterialTheme.typography.titleLarge)
-        Text(text = "All permissions and security-related settings for Allai.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = "Security",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "All permissions and security-related settings for Allai.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().glassCard(),
             shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1A102E))
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(text = "Permissions", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = "Permissions",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 SecurityRow(title = "Accessibility", subtitle = "Read/interact with any app screen", enabled = true, onToggle = { })
                 SecurityRow(title = "Camera", subtitle = "Take photos and scan", enabled = true, onToggle = { })
                 SecurityRow(title = "Microphone", subtitle = "Voice commands", enabled = true, onToggle = { })
@@ -269,7 +351,7 @@ private fun SecurityRow(title: String, subtitle: String, enabled: Boolean, onTog
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(text = title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
             Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(
@@ -306,22 +388,46 @@ fun AccountSettingsScreen() {
     }
 
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(text = "Account", style = MaterialTheme.typography.titleLarge)
-        Text(text = "Log in with your Google account like on any AI provider.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = "Account",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "Log in with your Google account like on any AI provider.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().glassCard(),
             shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1A102E))
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(text = "Sign in", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = "Sign in",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
                 if (googleAccount != null) {
                     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(text = "Signed in as:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(text = googleAccount!!.displayName ?: "Unknown", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                        Text(text = googleAccount!!.email ?: "No email", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = "Signed in as:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = googleAccount!!.displayName ?: "Unknown",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = googleAccount!!.email ?: "No email",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Button(
                             onClick = {
                                 googleSignInClient.signOut()
@@ -350,9 +456,13 @@ fun AccountSettingsScreen() {
                     }
                 }
 
-                Divider()
+                HorizontalDivider()
 
-                Text(text = "Or sign in with email", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = "Or sign in with email",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 OutlinedTextField(
                     value = "",
                     onValueChange = { },
@@ -384,13 +494,21 @@ fun AccountSettingsScreen() {
 @Composable
 fun IntegrationsSettingsScreen() {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(text = "Integrations", style = MaterialTheme.typography.titleLarge)
-        Text(text = "All the possible integrations Allai can connect to on Android.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = "Integrations",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "All the possible integrations Allai can connect to on Android.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().glassCard(),
             shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1A102E))
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 IntegrationRow(title = "Shell / Terminal", subtitle = "Run commands on your device", enabled = true)
@@ -412,7 +530,7 @@ private fun IntegrationRow(title: String, subtitle: String, enabled: Boolean) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(text = title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
             Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(

@@ -2,8 +2,8 @@ package com.allai.app.ui
 
 import android.content.Context
 import android.content.Intent
-import android.provider.Settings
 import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.IconButton
@@ -28,11 +27,11 @@ import com.allai.app.model.Message
 import com.allai.app.model.Role
 import com.allai.app.agent.AgentLoop
 import com.allai.app.model.LlmProvider
-import com.allai.app.plugin.PluginManager
 import com.allai.app.settings.SettingsState
 import com.allai.app.floating.FloatingWindowService
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import com.allai.app.theme.*
 
 @Composable
 fun AgentScreen(settings: SettingsState) {
@@ -71,19 +70,18 @@ fun AgentScreen(settings: SettingsState) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Box(modifier = Modifier.fillMaxSize().background(AllaiBackground)) {
         val context = LocalContext.current
 
-        // Bubble mode button - top right, small
         BubbleButton(
             onClick = {
-                if (!android.provider.Settings.canDrawOverlays(context)) {
-                    val intent = Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                if (!Settings.canDrawOverlays(context)) {
+                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                         Uri.parse("package:${context.packageName}"))
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(intent)
                 } else {
-                    context.startService(Intent(context, FloatingWindowService::class.java))
+                    FloatingWindowService.start(context)
                 }
             }
         )
@@ -120,23 +118,18 @@ fun AgentScreen(settings: SettingsState) {
                             .focusRequester(focusRequester)
                             .padding(vertical = 10.dp)
                             .background(
-                                Brush.linearGradient(
-                                    colors = listOf(
-                                        Color(0xFF1A102E),
-                                        Color(0xFF0F0A1E)
-                                    )
-                                ),
+                                Color(0xFF1A102E),
                                 MaterialTheme.shapes.large
                             )
                             .border(1.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.large)
                             .padding(12.dp),
                         textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 14.sp)
                     )
-                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     IconButton(onClick = {
                         sendMessage()
                     }) {
-                        Text(text = "➤", color = MaterialTheme.colorScheme.primary)
+                        Text(text = "▶", color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -148,15 +141,15 @@ fun AgentScreen(settings: SettingsState) {
 private fun BubbleButton(onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(12.dp)
             .fillMaxSize(),
         contentAlignment = Alignment.TopEnd
     ) {
         IconButton(
             onClick = onClick,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(44.dp)
         ) {
-            Text(text = "🫧", fontSize = 20.sp)
+            Text(text = "🫧", fontSize = 18.sp)
         }
     }
 }
@@ -173,12 +166,7 @@ private fun UserBubble(text: String) {
                 modifier = Modifier
                     .padding(16.dp, 10.dp)
                     .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF4A148C),
-                                Color(0xFF7B2CBF)
-                            )
-                        ),
+                        Brush.linearGradient(colors = listOf(Color(0xFF4A148C), Color(0xFF7B2CBF))),
                         MaterialTheme.shapes.large
                     )
                     .padding(horizontal = 4.dp),
@@ -201,12 +189,7 @@ private fun AgentBubble(text: String) {
                 modifier = Modifier
                     .padding(16.dp, 10.dp)
                     .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF003366),
-                                Color(0xFF00D4FF)
-                            )
-                        ),
+                        Brush.linearGradient(colors = listOf(Color(0xFF003366), Color(0xFF00D4FF))),
                         MaterialTheme.shapes.large
                     )
                     .padding(horizontal = 4.dp),

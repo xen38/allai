@@ -19,6 +19,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import kotlinx.coroutines.launch
 import com.allai.app.terminal.TerminalBridge
+import com.allai.app.theme.*
 
 @Composable
 fun TerminalScreen() {
@@ -31,29 +32,34 @@ fun TerminalScreen() {
         focusRequester.requestFocus()
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text(text = "Terminal", style = MaterialTheme.typography.titleLarge)
-        androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+    Column(modifier = Modifier.fillMaxSize().background(AllaiBackground)) {
+        Text(
+            text = "Terminal",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Spacer(modifier = Modifier.height(12.dp))
 
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium)
-                .padding(8.dp),
+                .padding(8.dp)
+                .glassCard(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(log, key = { it }) { line ->
                 Text(
                     text = line,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = if (line.startsWith("ERR")) Color(0xFFFF4D4D) else Color(0xFF00D4FF),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         }
 
-        androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Row(modifier = Modifier.fillMaxWidth()) {
             BasicTextField(
@@ -63,10 +69,10 @@ fun TerminalScreen() {
                     .weight(1f)
                     .focusRequester(focusRequester)
                     .padding(vertical = 8.dp)
-                    .background(Color(0xFFF8FAFC), MaterialTheme.shapes.medium)
+                    .background(Color(0xFF1A102E), MaterialTheme.shapes.medium)
                     .padding(12.dp),
             )
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             IconButton(onClick = {
                 if (command.isNotBlank()) {
                     val cmd = command
@@ -83,7 +89,7 @@ fun TerminalScreen() {
                     command = ""
                 }
             }) {
-                Text(text = "Send")
+                Text(text = "▶", color = MaterialTheme.colorScheme.primary)
             }
         }
     }
