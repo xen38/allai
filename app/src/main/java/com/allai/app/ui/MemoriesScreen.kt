@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.allai.app.memory.MemoryStore
 import com.allai.app.model.Memory
 import com.allai.app.model.LearnedAction
+import com.allai.app.plugin.PluginManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,8 +61,8 @@ fun MemoriesScreen() {
         }
 
         when (tab) {
-            0 -> MemoriesTab(store, memoryList, { memoryList.clear(); memoryList.addAll(store.getMemories()) })
-            1 -> LearnedActionsTab(store, actionList, { actionList.clear(); actionList.addAll(store.getLearnedActions()) })
+            0 -> MemoriesTab(store, memoryList)
+            1 -> LearnedActionsTab(store, actionList)
         }
 
         if (tab == 0 && showingAdd) {
@@ -114,8 +115,7 @@ fun MemoriesScreen() {
 @Composable
 private fun MemoriesTab(
     store: MemoryStore,
-    memoryList: MutableList<Memory>,
-    onRefresh: () -> Unit
+    memoryList: MutableList<Memory>
 ) {
     LazyColumn(
         modifier = Modifier
@@ -135,8 +135,7 @@ private fun MemoriesTab(
 @Composable
 private fun LearnedActionsTab(
     store: MemoryStore,
-    actionList: MutableList<LearnedAction>,
-    onRefresh: () -> Unit
+    actionList: MutableList<LearnedAction>
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
@@ -160,7 +159,7 @@ private fun LearnedActionsTab(
                 items = actionList as List<LearnedAction>,
                 key = { it.id }
             ) { action: LearnedAction ->
-                LearnedActionCard(action, store, onRefresh)
+                LearnedActionCard(action, store) { actionList.clear(); actionList.addAll(store.getLearnedActions()) }
             }
         }
     }
@@ -280,11 +279,23 @@ private fun LearnedActionCard(
                     style = MaterialTheme.typography.titleMedium,
                     color = AllaiOnSurface
                 )
-                Text(
-                    text = "used ${action.timesUsed}x",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AllaiSecondary
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(onClick = {
+                        val result = PluginManager.run(action.tool, action.arguments)
+                        if (result.ok) {
+                            store.recordAction(action.name, action.description, action.tool, action.arguments)
+                            onRefresh()
+                        }
+                    }) {
+                        Text(text = "▶", color = AllaiSecondary)
+                    }
+                    IconButton(onClick = {
+                        store.deleteMemory(action.id)
+                        onRefresh()
+                    }) {
+                        Text(text = "🗑", color = Color(0xFFFF4D4D))
+                    }
+                }
             }
             Text(
                 text = action.description,
