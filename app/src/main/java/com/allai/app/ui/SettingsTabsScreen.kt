@@ -2,7 +2,10 @@ package com.allai.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
@@ -18,9 +21,14 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.allai.app.memory.MemoryStore
+import com.allai.app.model.Memory
+import com.allai.app.model.LearnedAction
 import com.allai.app.theme.AllaiTheme
 import com.allai.app.settings.SettingsState
 import com.allai.app.theme.*
+
+import kotlin.collections.MutableList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +50,7 @@ fun SettingsTabsScreen(settings: SettingsState, onTabSelected: (Int) -> Unit) {
         ) {
             when (selected) {
                 0 -> ProviderSettingsScreen(settings)
-                1 -> AgentSettingsScreen(settings, { /* navigate to memories */ })
+                1 -> AgentSettingsScreen(settings)
                 2 -> SecuritySettingsScreen()
                 3 -> AccountSettingsScreen()
                 4 -> IntegrationsSettingsScreen()
@@ -192,7 +200,7 @@ fun ProviderSettingsScreen(settings: SettingsState) {
                     value = baseUrl,
                     onValueChange = { baseUrl = it },
                     label = { Text(text = "Base URL") },
-                    placeholder = { Text(text = "https://integrate.api.nvidia.com/v1") },
+                    placeholder = { Text(text = "https://integrate.api.nvidia.com/v1/chat/completions") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
                     singleLine = true
@@ -235,8 +243,18 @@ fun ProviderSettingsScreen(settings: SettingsState) {
 }
 
 @Composable
-fun AgentSettingsScreen(settings: SettingsState, onOpenMemories: () -> Unit = { }) {
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+fun AgentSettingsScreen(settings: SettingsState) {
+    val context = LocalContext.current
+    val store = MemoryStore.getInstance(context)
+    val memoryList = remember { mutableStateListOf<Memory>().apply { addAll(store.getMemories()) } }
+    val actionList = remember { mutableStateListOf<LearnedAction>().apply { addAll(store.getLearnedActions()) } }
+    var tab by remember { mutableIntStateOf(0) }
+    var showingAddMemory by remember { mutableStateOf(false) }
+    var newMemTitle by remember { mutableStateOf("") }
+    var newMemDesc by remember { mutableStateOf("") }
+    var newMemAction by remember { mutableStateOf("") }
+
+    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = "Agent",
             style = MaterialTheme.typography.titleLarge,
@@ -248,29 +266,76 @@ fun AgentSettingsScreen(settings: SettingsState, onOpenMemories: () -> Unit = { 
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
+        PrimaryTabRow(
+            selectedTabIndex = tab,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Tab(
+                selected = tab == 0,
+                onClick = { tab = 0 },
+                text = { Text(text = "Memories", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            )
+            Tab(
+                selected = tab == 1,
+                onClick = { tab = 1 },
+                text = { Text(text = "Learned Actions", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            )
+        }
+
+        when (tab) {
+            0 -> MemoriesTab(store, memoryList)
+            1 -> LearnedActionsTab(store, actionList)
+        }
+
+        if (tab == 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${memoryList.size} memories",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AllaiOnSurfaceVariant
+                )
+                Button(onClick = { showingAddMemory = true }) {
+                    Text(text = "Add Memory")
+                }
+            }
+        }
+
+        if (showingAddMemory) {
+            AddMemoryDialog(
+                onDismiss = { showingAddMemory = false },
+                onSave = { title, desc, action ->
+                    store.addMemory(
+                        Memory(
+                            id = java.util.UUID.randomUUID().toString(),
+                            title = title,
+                            description = desc,
+                            action = action,
+                            arguments = ""
+                        )
+                    )
+                    showingAddMemory = false
+                    memoryList.clear()
+                    memoryList.addAll(store.getMemories())
+                },
+                title = newMemTitle,
+                desc = newMemDesc,
+                action = newMemAction,
+                onTitleChange = { newMemTitle = it },
+                onDescChange = { newMemDesc = it },
+                onActionChange = { newMemAction = it }
+            )
+        }
+
         Card(
             modifier = Modifier.fillMaxWidth().glassCard(),
             shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(containerColor = Color(0xFF1A102E))
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(
-                    text = "Memories",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Allai learns from your actions and stores memories so it can replicate them.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Button(
-                    onClick = { onOpenMemories() },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large
-                ) {
-                    Text(text = "Open Memories Tab")
-                }
-
                 Text(
                     text = "Skills",
                     style = MaterialTheme.typography.labelLarge,
@@ -306,7 +371,79 @@ fun AgentSettingsScreen(settings: SettingsState, onOpenMemories: () -> Unit = { 
 }
 
 @Composable
-fun SecuritySettingsScreen() {
+private fun MemoriesTab(
+    store: MemoryStore,
+    memoryList: MutableList<Memory>
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Text(
+            text = "Memories",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "Allai learns from your actions and stores memories so it can replicate them.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = AllaiOnSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(
+                items = memoryList as List<Memory>,
+                key = { it.id }
+            ) { memory: Memory ->
+                MemoryCard(
+                    memory = memory,
+                    store = store,
+                    onRefresh = { memoryList.clear(); memoryList.addAll(store.getMemories()) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LearnedActionsTab(
+    store: MemoryStore,
+    actionList: MutableList<LearnedAction>
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Text(
+            text = "Learned Actions",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "Actions Allai has learned from your phone usage and can replicate.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = AllaiOnSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(
+                items = actionList as List<LearnedAction>,
+                key = { it.id }
+            ) { action: LearnedAction ->
+                LearnedActionCard(
+                    action = action,
+                    store = store,
+                    onRefresh = { actionList.clear(); actionList.addAll(store.getLearnedActions()) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SecuritySettingsScreen() {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = "Security",
@@ -542,4 +679,58 @@ private fun IntegrationRow(title: String, subtitle: String, enabled: Boolean) {
             )
         )
     }
+}
+
+@Composable
+private fun AddMemoryDialog(
+    onDismiss: () -> Unit,
+    onSave: (String, String, String) -> Unit,
+    title: String,
+    desc: String,
+    action: String,
+    onTitleChange: (String) -> Unit,
+    onDescChange: (String) -> Unit,
+    onActionChange: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Add Memory") },
+        text = {
+            Column(modifier = Modifier.width(300.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = onTitleChange,
+                    label = { Text(text = "Title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = desc,
+                    onValueChange = onDescChange,
+                    label = { Text(text = "Description") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
+                OutlinedTextField(
+                    value = action,
+                    onValueChange = onActionChange,
+                    label = { Text(text = "Action (e.g. shell, sms, launcher)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (title.isNotBlank()) onSave(title, desc, action)
+            }) {
+                Text(text = "Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Cancel")
+            }
+        }
+    )
 }

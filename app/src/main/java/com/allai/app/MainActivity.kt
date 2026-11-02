@@ -15,11 +15,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.allai.app.settings.SettingsState
 import com.allai.app.theme.AllaiTheme
+import com.allai.app.theme.AllaiBackground
 import com.allai.app.ui.AgentScreen
 import com.allai.app.ui.OnboardingScreen
 import com.allai.app.ui.SettingsTabsScreen
 import com.allai.app.ui.TerminalScreen
-import com.allai.app.ui.MemoriesScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,13 +51,33 @@ private fun MainNav(settings: SettingsState) {
                 when (selected) {
                     0 -> AgentScreen(settings)
                     1 -> TerminalScreen()
-                    2 -> SettingsTabsScreen(settings, { selected = it })
-                    3 -> MemoriesScreen()
+                    2 -> SessionsScreen()
+                    3 -> SettingsTabsScreen(settings, { selected = it })
                 }
             }
 
             BottomBar(selected = selected, onTabSelected = { selected = it })
         }
+    }
+}
+
+@Composable
+private fun SessionsScreen() {
+    Column(
+        modifier = Modifier.fillMaxSize().background(AllaiBackground),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        androidx.compose.material3.Text(
+            text = "Sessions",
+            style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
+        )
+        androidx.compose.material3.Text(
+            text = "Your chat sessions will appear here.",
+            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -84,13 +104,13 @@ private fun BottomBar(selected: Int, onTabSelected: (Int) -> Unit) {
         )
         BottomTab(
             modifier = Modifier.weight(1f),
-            text = "Settings",
+            text = "Sessions",
             selected = selected == 2,
             onClick = { onTabSelected(2) }
         )
         BottomTab(
             modifier = Modifier.weight(1f),
-            text = "Memories",
+            text = "Settings",
             selected = selected == 3,
             onClick = { onTabSelected(3) }
         )

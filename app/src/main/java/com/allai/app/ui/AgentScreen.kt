@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,8 +39,9 @@ import com.allai.app.theme.*
 fun AgentScreen(settings: SettingsState) {
     val messages = remember { mutableStateListOf<Message>() }
     var input by remember { mutableStateOf("") }
+    var currentModel by remember { mutableStateOf(settings.model) }
+    var showingModelPicker by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val agent = remember { AgentLoop() }
     val focusRequester = remember { FocusRequester() }
 
     val initialized = remember { mutableStateOf(false) }
@@ -49,6 +52,8 @@ fun AgentScreen(settings: SettingsState) {
             focusRequester.requestFocus()
         }
     }
+
+    val agentLoop = remember { AgentLoop() }
 
     val sendMessage = {
         if (input.isNotBlank()) {
@@ -61,7 +66,7 @@ fun AgentScreen(settings: SettingsState) {
                         provider = settings.provider,
                         systemPrompt = settings.systemPrompt
                     )
-                    val reply = agent.run(config, messages.toList())
+                    val reply = agentLoop.run(config, messages.toList())
                     messages.add(Message(Role.Agent, reply))
                 } catch (e: Exception) {
                     messages.add(Message(Role.Agent, "Error: ${e.message}"))
@@ -73,23 +78,43 @@ fun AgentScreen(settings: SettingsState) {
     Box(modifier = Modifier.fillMaxSize().background(AllaiBackground)) {
         val context = LocalContext.current
 
-        BubbleButton(
-            onClick = {
-                if (!Settings.canDrawOverlays(context)) {
-                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:${context.packageName}"))
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(intent)
-                } else {
-                    FloatingWindowService.start(context)
-                }
+        // Top bar: context button (left) + bubble button (right)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp, 8.dp, 16.dp, 0.dp)
+        ) {
+            // Context button - top left
+            IconButton(
+                onClick = { /* show context menu with token consumption */ }
+            ) {
+                Text(text = "📊", fontSize = 20.sp)
             }
-        )
 
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Bubble button - top right
+            IconButton(
+                onClick = {
+                    if (!Settings.canDrawOverlays(context)) {
+                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:${context.packageName}"))
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    } else {
+                        FloatingWindowService.start(context)
+                    }
+                }
+            ) {
+                Text(text = "🫧", fontSize = 18.sp)
+            }
+        }
+
+        // Chat area - full empty box top-to-bottom
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp, 72.dp, 16.dp, 80.dp),
+                .padding(16.dp, 56.dp, 16.dp, 140.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(messages, key = { it.hashCode().toString() }) { msg ->
@@ -102,13 +127,81 @@ fun AgentScreen(settings: SettingsState) {
             }
         }
 
+        // Bottom: model selector + chatbox + controls
         Box(
             modifier = Modifier
-                .padding(16.dp, 16.dp, 16.dp, 16.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(16.dp, 0.dp, 16.dp, 16.dp),
             contentAlignment = Alignment.BottomCenter
         ) {
             Column {
+                // Model selector button attached above chatbox
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Model selector + workspace + new session buttons row
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Model selector button
+                        OutlinedButton(
+                            onClick = { showingModelPicker = true },
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.large
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = currentModel,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text(
+                                    text = "▼",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
+                        }
+
+                        // Workspace button
+                        IconButton(
+                            onClick = { },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Text(text = "🏢", fontSize = 18.sp)
+                        }
+
+                        // New session button
+                        IconButton(
+                            onClick = {
+                                messages.clear()
+                                messages.add(Message(Role.System, settings.systemPrompt))
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Text(text = "📄", fontSize = 18.sp)
+                        }
+                    }
+
+                    // Send button
+                    IconButton(
+                        onClick = { sendMessage() },
+                        modifier = Modifier.size(40.dp),
+                        enabled = input.isNotBlank()
+                    ) {
+                        Text(text = "▶", color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+
+                // Chatbox input
                 Row(modifier = Modifier.fillMaxWidth()) {
                     BasicTextField(
                         value = input,
@@ -125,31 +218,64 @@ fun AgentScreen(settings: SettingsState) {
                             .padding(12.dp),
                         textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 14.sp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(onClick = {
-                        sendMessage()
-                    }) {
-                        Text(text = "▶", color = MaterialTheme.colorScheme.primary)
-                    }
                 }
             }
         }
-    }
-}
 
-@Composable
-private fun BubbleButton(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .padding(12.dp)
-            .fillMaxSize(),
-        contentAlignment = Alignment.TopEnd
-    ) {
-        IconButton(
-            onClick = onClick,
-            modifier = Modifier.size(44.dp)
-        ) {
-            Text(text = "🫧", fontSize = 18.sp)
+        // Model picker dropdown (overlay)
+        if (showingModelPicker) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0x000000).copy(alpha = 0.3f))
+                    .clickable { showingModelPicker = false },
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp, 56.dp, 16.dp, 0.dp)
+                        .width(240.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    val models = listOf(
+                        "nvidia/nemotron-3-ultra-550b-a55b",
+                        "nvidia/nemotron-3-405b-a55b",
+                        "meta/llama-3.1-405b-instruct",
+                        "meta/llama-3.1-70b-instruct",
+                        "meta/llama-3.1-8b-instruct",
+                        "google/gemma-2-27b-it",
+                        "mistralai/mistral-7b-instruct-v0.3",
+                        "anthropic/claude-3.5-sonnet",
+                        "openai/gpt-4o",
+                        "custom"
+                    )
+
+                    models.forEach { model ->
+                        TextButton(
+                            onClick = {
+                                currentModel = model
+                                settings.model = model
+                                showingModelPicker = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = model,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (model == currentModel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                                if (model == currentModel) {
+                                    Text(text = "✓", color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

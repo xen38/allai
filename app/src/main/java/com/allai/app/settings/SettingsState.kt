@@ -12,15 +12,15 @@ class SettingsState(private val context: Context) {
         set(value) = prefs.edit().putString("provider_name", value).apply()
 
     var apiKey: String
-        get() = prefs.getString("api_key", "") ?: ""
+        get() = prefs.getString("api_key", "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") ?: "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"
         set(value) = prefs.edit().putString("api_key", value).apply()
 
     var model: String
-        get() = prefs.getString("model", "gpt-4o-mini") ?: "gpt-4o-mini"
+        get() = prefs.getString("model", "nvidia/nemotron-3-ultra-550b-a55b") ?: "nvidia/nemotron-3-ultra-550b-a55b"
         set(value) = prefs.edit().putString("model", value).apply()
 
     var baseUrl: String
-        get() = prefs.getString("base_url", "https://api.openai.com/v1/chat/completions") ?: ""
+        get() = prefs.getString("base_url", "https://integrate.api.nvidia.com/v1/chat/completions") ?: "https://integrate.api.nvidia.com/v1/chat/completions"
         set(value) = prefs.edit().putString("base_url", value).apply()
 
     var systemPrompt: String
