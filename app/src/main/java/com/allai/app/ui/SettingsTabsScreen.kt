@@ -42,7 +42,7 @@ fun SettingsTabsScreen(settings: SettingsState, onTabSelected: (Int) -> Unit) {
         ) {
             when (selected) {
                 0 -> ProviderSettingsScreen(settings)
-                1 -> AgentSettingsScreen(settings)
+                1 -> AgentSettingsScreen(settings, { /* navigate to memories */ })
                 2 -> SecuritySettingsScreen()
                 3 -> AccountSettingsScreen()
                 4 -> IntegrationsSettingsScreen()
@@ -235,7 +235,7 @@ fun ProviderSettingsScreen(settings: SettingsState) {
 }
 
 @Composable
-fun AgentSettingsScreen(settings: SettingsState) {
+fun AgentSettingsScreen(settings: SettingsState, onOpenMemories: () -> Unit = { }) {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = "Agent",
@@ -264,7 +264,7 @@ fun AgentSettingsScreen(settings: SettingsState) {
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Button(
-                    onClick = { },
+                    onClick = { onOpenMemories() },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large
                 ) {

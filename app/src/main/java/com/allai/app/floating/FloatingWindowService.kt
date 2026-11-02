@@ -50,9 +50,6 @@ class FloatingWindowService : Service() {
     override fun onBind(intent: Intent): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (::overlayView.isInitialized) {
-            return START_STICKY
-        }
         showOverlay()
         return START_STICKY
     }
