@@ -172,6 +172,9 @@ private fun MemoryCard(
     onRefresh: () -> Unit
 ) {
     var fav by remember { mutableStateOf(memory.favorite) }
+    var showingEdit by remember { mutableStateOf(false) }
+    var editTitle by remember { mutableStateOf(memory.title) }
+    var editDesc by remember { mutableStateOf(memory.description) }
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -213,6 +216,13 @@ private fun MemoryCard(
                         Text(text = if (fav) "★" else "☆", color = Color(0xFFFF4D4D))
                     }
                     IconButton(onClick = {
+                        editTitle = memory.title
+                        editDesc = memory.description
+                        showingEdit = true
+                    }) {
+                        Text(text = "✏", color = AllaiSecondary)
+                    }
+                    IconButton(onClick = {
                         store.deleteMemory(memory.id)
                         onRefresh()
                     }) {
@@ -225,19 +235,22 @@ private fun MemoryCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = AllaiOnSurfaceVariant
             )
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    text = "Action: ${memory.action}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AllaiSecondary
-                )
-                Text(
-                    text = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(memory.timestamp)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AllaiOnSurfaceVariant
-                )
-            }
         }
+    }
+
+    if (showingEdit) {
+        EditMemoryDialog(
+            onDismiss = { showingEdit = false },
+            onSave = { title, desc ->
+                store.updateMemory(memory.id, title, desc)
+                showingEdit = false
+                onRefresh()
+            },
+            title = editTitle,
+            desc = editDesc,
+            onTitleChange = { editTitle = it },
+            onDescChange = { editDesc = it }
+        )
     }
 }
 
@@ -360,6 +373,51 @@ private fun AddMemoryDialog(
         confirmButton = {
             TextButton(onClick = {
                 if (title.isNotBlank()) onSave(title, desc, action)
+            }) {
+                Text(text = "Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun EditMemoryDialog(
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit,
+    title: String,
+    desc: String,
+    onTitleChange: (String) -> Unit,
+    onDescChange: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Edit Memory") },
+        text = {
+            Column(modifier = Modifier.width(300.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = onTitleChange,
+                    label = { Text(text = "Title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = desc,
+                    onValueChange = onDescChange,
+                    label = { Text(text = "Description") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (title.isNotBlank()) onSave(title, desc)
             }) {
                 Text(text = "Save")
             }

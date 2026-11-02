@@ -37,6 +37,15 @@ class MemoryStore(private val context: Context) {
         }
     }
 
+    fun updateMemory(id: String, newTitle: String, newDesc: String) {
+        val memories = getMemories().toMutableList()
+        val index = memories.indexOfFirst { it.id == id }
+        if (index >= 0) {
+            memories[index] = memories[index].copy(title = newTitle, description = newDesc)
+            prefs.edit().putString("memories", gson.toJson(memories)).apply()
+        }
+    }
+
     fun clearMemories() {
         prefs.edit().putString("memories", "[]").apply()
     }
