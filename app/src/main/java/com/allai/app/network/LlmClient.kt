@@ -2,6 +2,7 @@ package com.allai.app.network
 
 import com.allai.app.model.*
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.IOException
@@ -37,6 +38,34 @@ object LlmClient {
                 response
             } catch (e: Exception) {
                 throw e
+            }
+        }
+    }
+
+    suspend fun fetchModels(provider: LlmProvider): List<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val baseUrl = provider.baseUrl.takeIf { it.endsWith("/") } ?: provider.baseUrl + "/"
+                val modelsUrl = baseUrl + "models"
+                val request = Request.Builder()
+                    .url(modelsUrl)
+                    .header("Authorization", "Bearer ${provider.apiKey}")
+                    .header("Content-Type", "application/json")
+                    .build()
+                val response = client.newCall(request).execute()
+                if (!response.isSuccessful) {
+                    emptyList()
+                } else {
+                    val json = response.body?.string() ?: ""
+                    val parsed = JsonParser.parseString(json).asJsonObject
+                    val data = parsed.getAsJsonArray("data")
+                    if (data == null) emptyList()
+                    else {
+                        data.map { it.asJsonObject.get("id").asString }
+                    }
+                }
+            } catch (e: Exception) {
+                emptyList()
             }
         }
     }

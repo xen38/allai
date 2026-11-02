@@ -31,6 +31,7 @@ import com.allai.app.agent.AgentLoop
 import com.allai.app.model.LlmProvider
 import com.allai.app.settings.SettingsState
 import com.allai.app.floating.FloatingWindowService
+import com.allai.app.network.LlmClient
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import com.allai.app.theme.*
@@ -41,6 +42,7 @@ fun AgentScreen(settings: SettingsState) {
     var input by remember { mutableStateOf("") }
     var currentModel by remember { mutableStateOf(settings.model) }
     var showingModelPicker by remember { mutableStateOf(false) }
+    var availableModels = remember { mutableStateListOf<String>() }
     val scope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
 
@@ -54,6 +56,20 @@ fun AgentScreen(settings: SettingsState) {
     }
 
     val agentLoop = remember { AgentLoop() }
+
+    val fetchModels = {
+        scope.launch {
+            try {
+                val models = LlmClient.fetchModels(settings.provider)
+                if (models.isNotEmpty()) {
+                    availableModels.clear()
+                    availableModels.addAll(models)
+                }
+            } catch (e: Exception) {
+                // Ignore fetch errors, will use static fallback
+            }
+        }
+    }
 
     val sendMessage = {
         if (input.isNotBlank()) {
@@ -148,7 +164,10 @@ fun AgentScreen(settings: SettingsState) {
                     ) {
                         // Model selector button
                         OutlinedButton(
-                            onClick = { showingModelPicker = true },
+                            onClick = {
+                                fetchModels()
+                                showingModelPicker = true
+                            },
                             modifier = Modifier.weight(1f),
                             shape = MaterialTheme.shapes.large
                         ) {
@@ -237,12 +256,12 @@ fun AgentScreen(settings: SettingsState) {
                         .width(240.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    val models = listOf(
-                        "nvidia/nemotron-3-ultra-550b-a55b",
-                        "nvidia/nemotron-3-405b-a55b",
-                        "meta/llama-3.1-405b-instruct",
-                        "meta/llama-3.1-70b-instruct",
+                    val models = if (availableModels.isNotEmpty()) availableModels else listOf(
                         "meta/llama-3.1-8b-instruct",
+                        "meta/llama-3.1-70b-instruct",
+                        "meta/llama-3.1-405b-instruct",
+                        "nvidia/nemotron-3-405b-a55b",
+                        "nvidia/nemotron-3-ultra-550b-a55b",
                         "google/gemma-2-27b-it",
                         "mistralai/mistral-7b-instruct-v0.3",
                         "anthropic/claude-3.5-sonnet",

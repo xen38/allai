@@ -16,7 +16,7 @@ class SettingsState(private val context: Context) {
         set(value) = prefs.edit().putString("api_key", value).apply()
 
     var model: String
-        get() = prefs.getString("model", "nvidia/nemotron-3-ultra-550b-a55b") ?: "nvidia/nemotron-3-ultra-550b-a55b"
+        get() = prefs.getString("model", "meta/llama-3.1-8b-instruct") ?: "meta/llama-3.1-8b-instruct"
         set(value) = prefs.edit().putString("model", value).apply()
 
     var baseUrl: String

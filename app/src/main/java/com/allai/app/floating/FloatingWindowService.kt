@@ -21,7 +21,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,8 +33,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.allai.app.AllaiApplication
-import com.allai.app.theme.AllaiTheme
 import com.allai.app.settings.SettingsState
 import com.allai.app.agent.AgentLoop
 import com.allai.app.model.Message
@@ -50,61 +51,66 @@ class FloatingWindowService : Service() {
     override fun onBind(intent: Intent): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        showOverlay()
+        CoroutineScope(Dispatchers.Main).launch {
+            val result = withContext(Dispatchers.IO) {
+                val wm = getSystemService(WINDOW_SERVICE) as WindowManager
+                val p = WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                    PixelFormat.TRANSLUCENT
+                )
+                p.gravity = Gravity.TOP or Gravity.START
+                p.x = 20
+                p.y = 100
+                p.width = 360
+                p.height = 560
+
+                val v = ComposeView(this@FloatingWindowService).apply {
+                    setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                    setContent {
+                        AllaiTheme {
+                            FloatingChatOverlay(onClose = { stopSelf() })
+                        }
+                    }
+                }
+
+                v.setOnTouchListener { _, event ->
+                    when (event.actionMasked) {
+                        MotionEvent.ACTION_DOWN -> {
+                            initialTouchX = event.rawX
+                            initialTouchY = event.rawY
+                            initialParamsX = p.x
+                            initialParamsY = p.y
+                            true
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            p.x = (initialParamsX + (event.rawX - initialTouchX)).toInt()
+                            p.y = (initialParamsY + (event.rawY - initialTouchY)).toInt()
+                            wm.updateViewLayout(v, p)
+                            true
+                        }
+                        else -> false
+                    }
+                }
+
+                Triple(p, v, wm)
+            }
+
+            params = result.first
+            overlayView = result.second
+            windowManager = result.third
+            windowManager.addView(overlayView, params!!)
+        }
         return START_STICKY
     }
 
     override fun onDestroy() {
         hideOverlay()
         super.onDestroy()
-    }
-
-    private fun showOverlay() {
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            PixelFormat.TRANSLUCENT
-        )
-        params!!.gravity = Gravity.TOP or Gravity.START
-        params!!.x = 20
-        params!!.y = 100
-        params!!.width = 360
-        params!!.height = 560
-
-        overlayView = ComposeView(this).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                AllaiTheme {
-                    FloatingChatOverlay(onClose = { stopSelf() })
-                }
-            }
-        }
-
-        overlayView.setOnTouchListener { _, event ->
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    initialParamsX = params!!.x
-                    initialParamsY = params!!.y
-                    true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    params!!.x = (initialParamsX + (event.rawX - initialTouchX)).toInt()
-                    params!!.y = (initialParamsY + (event.rawY - initialTouchY)).toInt()
-                    windowManager.updateViewLayout(overlayView, params!!)
-                    true
-                }
-                else -> false
-            }
-        }
-
-        windowManager.addView(overlayView, params!!)
     }
 
     private fun hideOverlay() {
