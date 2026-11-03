@@ -52,58 +52,58 @@ class FloatingWindowService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         CoroutineScope(Dispatchers.Main).launch {
-            val result = withContext(Dispatchers.IO) {
-                val wm = getSystemService(WINDOW_SERVICE) as WindowManager
-                val p = WindowManager.LayoutParams(
-                    WindowManager.LayoutParams.WRAP_CONTENT,
-                    WindowManager.LayoutParams.WRAP_CONTENT,
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
-                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                    PixelFormat.TRANSLUCENT
-                )
-                p.gravity = Gravity.TOP or Gravity.START
-                p.x = 20
-                p.y = 100
-                p.width = 360
-                p.height = 560
+            val wm = getSystemService(WINDOW_SERVICE) as WindowManager
+            val p = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                PixelFormat.TRANSLUCENT
+            )
+            p.gravity = Gravity.TOP or Gravity.START
+            p.x = 20
+            p.y = 100
+            p.width = 360
+            p.height = 560
 
-                val v = ComposeView(this@FloatingWindowService).apply {
-                    setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-                    setContent {
-                        AllaiTheme {
-                            FloatingChatOverlay(onClose = { stopSelf() })
-                        }
+            val v = ComposeView(this@FloatingWindowService).apply {
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+                setContent {
+                    AllaiTheme {
+                        FloatingChatOverlay(onClose = { stopSelf() })
                     }
                 }
-
-                v.setOnTouchListener { _, event ->
-                    when (event.actionMasked) {
-                        MotionEvent.ACTION_DOWN -> {
-                            initialTouchX = event.rawX
-                            initialTouchY = event.rawY
-                            initialParamsX = p.x
-                            initialParamsY = p.y
-                            true
-                        }
-                        MotionEvent.ACTION_MOVE -> {
-                            p.x = (initialParamsX + (event.rawX - initialTouchX)).toInt()
-                            p.y = (initialParamsY + (event.rawY - initialTouchY)).toInt()
-                            wm.updateViewLayout(v, p)
-                            true
-                        }
-                        else -> false
-                    }
-                }
-
-                Triple(p, v, wm)
             }
 
-            params = result.first
-            overlayView = result.second
-            windowManager = result.third
-            windowManager.addView(overlayView, params!!)
+            v.setOnTouchListener { _, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        initialTouchX = event.rawX
+                        initialTouchY = event.rawY
+                        initialParamsX = p.x
+                        initialParamsY = p.y
+                        true
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        p.x = (initialParamsX + (event.rawX - initialTouchX)).toInt()
+                        p.y = (initialParamsY + (event.rawY - initialTouchY)).toInt()
+                        wm.updateViewLayout(v, p)
+                        true
+                    }
+                    else -> false
+                }
+            }
+
+            params = p
+            overlayView = v
+            windowManager = wm
+            try {
+                windowManager.addView(overlayView, params!!)
+            } catch (e: Exception) {
+                stopSelf()
+            }
         }
         return START_STICKY
     }
