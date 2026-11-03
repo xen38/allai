@@ -180,7 +180,9 @@ fun AgentScreen(settings: SettingsState) {
                                     text = currentModel,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                                 Text(
                                     text = "▼",

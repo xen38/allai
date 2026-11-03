@@ -37,11 +37,12 @@ class MainActivity : ComponentActivity() {
 private fun MainNav(settings: SettingsState) {
     val context = LocalContext.current
     val prefs: SharedPreferences = context.getSharedPreferences("allai_onboarding", android.content.Context.MODE_PRIVATE)
-    val onboardingComplete by remember { mutableStateOf(prefs.getBoolean("onboarding_complete", false)) }
+    var onboardingComplete by remember { mutableStateOf(prefs.getBoolean("onboarding_complete", false)) }
 
     if (!onboardingComplete || settings.apiKey.isBlank()) {
         OnboardingScreen(onComplete = {
             prefs.edit().putBoolean("onboarding_complete", true).apply()
+            onboardingComplete = true
         })
     } else {
         var selected by remember { mutableIntStateOf(0) }

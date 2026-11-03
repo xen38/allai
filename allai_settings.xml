@@ -1,0 +1,8 @@
+﻿<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="base_url">https://integrate.api.nvidia.com/v1/chat/completions</string>
+    <string name="model">nvidia/nemotron-3-ultra-550b-a55b</string>
+    <string name="system_prompt">You are Allai</string>
+    <string name="provider_name">openai</string>
+    <string name="api_key">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</string>
+</map>

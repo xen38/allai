@@ -1,0 +1,95 @@
+--------- beginning of system
+11-02 03:18:08.937 22596 22596 D InsetsController: show(ime())
+11-02 03:18:08.939 22596 22596 I ImeTracker: com.allai.app.debug:add3c188: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT_BY_INSETS_API fromUser false userId 0 displayId 0
+11-02 03:18:08.940 22596 22596 I ImeTracker: com.allai.app.debug:add3c188: onCancelled at PHASE_CLIENT_REPORT_REQUESTED_VISIBLE_TYPES
+--------- beginning of main
+11-02 03:18:09.005 22596 22596 I AssistStructure: Flattened final assist data: 516 bytes, containing 1 windows, 3 views
+11-02 03:18:09.089 22596 22596 I ImeTracker: com.allai.app.debug:db0d1bcb: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false userId 0 displayId 0
+11-02 03:18:09.089 22596 22596 D InsetsController: show(ime())
+11-02 03:18:09.089 22596 22596 I ImeTracker: com.allai.app.debug:db0d1bcb: onCancelled at PHASE_CLIENT_REPORT_REQUESTED_VISIBLE_TYPES
+11-02 03:18:09.211 22596 22596 D Autofill Status: Autofill popup isn't shown because autofill is not available.
+11-02 03:18:09.211 22596 22596 D Autofill Status: 
+11-02 03:18:09.211 22596 22596 D Autofill Status: Did you set up autofill?
+11-02 03:18:09.211 22596 22596 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced > Autofill Service
+11-02 03:18:09.211 22596 22596 D Autofill Status: 2. Pick a service
+11-02 03:18:09.211 22596 22596 D Autofill Status: 
+11-02 03:18:09.211 22596 22596 D Autofill Status: Did you add an account?
+11-02 03:18:09.211 22596 22596 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced
+11-02 03:18:09.211 22596 22596 D Autofill Status: 2. Click on the settings icon next to the Autofill Service
+11-02 03:18:09.211 22596 22596 D Autofill Status: 3. Add your account
+11-02 03:24:05.939 22596 22596 D InsetsController: show(ime())
+11-02 03:24:05.947 22596 22596 I ImeTracker: com.allai.app.debug:d1c23f66: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT_BY_INSETS_API fromUser false userId 0 displayId 0
+11-02 03:24:05.948 22596 22596 I ImeTracker: com.allai.app.debug:d1c23f66: onCancelled at PHASE_CLIENT_REPORT_REQUESTED_VISIBLE_TYPES
+11-02 03:24:06.046 22596 22596 I AssistStructure: Flattened final assist data: 516 bytes, containing 1 windows, 3 views
+11-02 03:24:06.110 22596 22596 I ImeTracker: com.allai.app.debug:36284024: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false userId 0 displayId 0
+11-02 03:24:06.110 22596 22596 D InsetsController: show(ime())
+11-02 03:24:06.111 22596 22596 I ImeTracker: com.allai.app.debug:36284024: onCancelled at PHASE_CLIENT_REPORT_REQUESTED_VISIBLE_TYPES
+11-02 03:24:06.256 22596 22596 D Autofill Status: Autofill popup isn't shown because autofill is not available.
+11-02 03:24:06.256 22596 22596 D Autofill Status: 
+11-02 03:24:06.256 22596 22596 D Autofill Status: Did you set up autofill?
+11-02 03:24:06.256 22596 22596 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced > Autofill Service
+11-02 03:24:06.256 22596 22596 D Autofill Status: 2. Pick a service
+11-02 03:24:06.256 22596 22596 D Autofill Status: 
+11-02 03:24:06.256 22596 22596 D Autofill Status: Did you add an account?
+11-02 03:24:06.256 22596 22596 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced
+11-02 03:24:06.256 22596 22596 D Autofill Status: 2. Click on the settings icon next to the Autofill Service
+11-02 03:24:06.256 22596 22596 D Autofill Status: 3. Add your account
+11-02 03:24:28.907 22596 22596 D InsetsController: show(ime())
+11-02 03:24:28.911 22596 22596 I ImeTracker: com.allai.app.debug:a644cf98: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT_BY_INSETS_API fromUser false userId 0 displayId 0
+11-02 03:24:28.913 22596 22596 I ImeTracker: com.allai.app.debug:a644cf98: onCancelled at PHASE_CLIENT_REPORT_REQUESTED_VISIBLE_TYPES
+11-02 03:24:28.952 22596 22596 I AssistStructure: Flattened final assist data: 516 bytes, containing 1 windows, 3 views
+11-02 03:24:28.972 22596 22596 I ImeTracker: com.allai.app.debug:9069fd25: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false userId 0 displayId 0
+11-02 03:24:28.973 22596 22596 D InsetsController: show(ime())
+11-02 03:24:28.973 22596 22596 I ImeTracker: com.allai.app.debug:9069fd25: onCancelled at PHASE_CLIENT_REPORT_REQUESTED_VISIBLE_TYPES
+11-02 03:24:29.168 22596 22596 D Autofill Status: Autofill popup isn't shown because autofill is not available.
+11-02 03:24:29.168 22596 22596 D Autofill Status: 
+11-02 03:24:29.168 22596 22596 D Autofill Status: Did you set up autofill?
+11-02 03:24:29.168 22596 22596 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced > Autofill Service
+11-02 03:24:29.168 22596 22596 D Autofill Status: 2. Pick a service
+11-02 03:24:29.168 22596 22596 D Autofill Status: 
+11-02 03:24:29.168 22596 22596 D Autofill Status: Did you add an account?
+11-02 03:24:29.168 22596 22596 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced
+11-02 03:24:29.168 22596 22596 D Autofill Status: 2. Click on the settings icon next to the Autofill Service
+11-02 03:24:29.168 22596 22596 D Autofill Status: 3. Add your account
+11-02 03:27:48.264 22596 22596 D InsetsController: hide(ime())
+11-02 03:27:48.271 22596 22596 I ImeTracker: com.allai.app.debug:be87dd79: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_BY_INSETS_API fromUser false userId 0 displayId 0
+11-02 03:27:48.277 22596 22596 D InsetsController: Setting requestedVisibleTypes to 503 (was 511)
+11-02 03:30:09.753 22596 22596 D InsetsController: show(ime())
+11-02 03:30:09.765 22596 22596 I ImeTracker: com.allai.app.debug:f5d5ed5b: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT_BY_INSETS_API fromUser false userId 0 displayId 0
+11-02 03:30:09.765 22596 22596 D InsetsController: Setting requestedVisibleTypes to 511 (was 503)
+11-02 03:30:09.860 22596 22596 I AssistStructure: Flattened final assist data: 516 bytes, containing 1 windows, 3 views
+11-02 03:30:09.869 22596 22596 I ImeTracker: com.allai.app.debug:944dc312: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false userId 0 displayId 0
+11-02 03:30:09.870 22596 22596 D InsetsController: show(ime())
+11-02 03:30:09.870 22596 22596 I ImeTracker: com.allai.app.debug:944dc312: onCancelled at PHASE_CLIENT_REPORT_REQUESTED_VISIBLE_TYPES
+11-02 03:30:10.100 22596 22596 D Autofill Status: Autofill popup isn't shown because autofill is not available.
+11-02 03:30:10.100 22596 22596 D Autofill Status: 
+11-02 03:30:10.100 22596 22596 D Autofill Status: Did you set up autofill?
+11-02 03:30:10.100 22596 22596 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced > Autofill Service
+11-02 03:30:10.100 22596 22596 D Autofill Status: 2. Pick a service
+11-02 03:30:10.100 22596 22596 D Autofill Status: 
+11-02 03:30:10.100 22596 22596 D Autofill Status: Did you add an account?
+11-02 03:30:10.100 22596 22596 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced
+11-02 03:30:10.100 22596 22596 D Autofill Status: 2. Click on the settings icon next to the Autofill Service
+11-02 03:30:10.100 22596 22596 D Autofill Status: 3. Add your account
+11-02 03:32:39.654 22596 22601 I allai.app.debug: Background young concurrent mark compact GC freed 3760KB AllocSpace bytes, 0(0B) LOS objects, 38% free, 5463KB/8951KB, paused 9.118ms,9.660ms total 270.290ms
+11-02 03:32:39.654 22596 22601 W allai.app.debug: Reducing the number of considered missed Gc histogram windows from 109 to 100
+11-02 03:32:40.101 22596 22596 D InsetsController: hide(ime())
+11-02 03:32:40.101 22596 22596 I ImeTracker: com.allai.app.debug:225f7139: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_BY_INSETS_API fromUser false userId 0 displayId 0
+11-02 03:32:40.101 22596 22596 D InsetsController: Setting requestedVisibleTypes to 503 (was 511)
+11-02 03:33:54.863 22596 22596 D InsetsController: show(ime())
+11-02 03:33:54.863 22596 22596 I ImeTracker: com.allai.app.debug:1625c603: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT_BY_INSETS_API fromUser false userId 0 displayId 0
+11-02 03:33:54.863 22596 22596 D InsetsController: Setting requestedVisibleTypes to 511 (was 503)
+11-02 03:33:55.015 22596 22596 I AssistStructure: Flattened final assist data: 516 bytes, containing 1 windows, 3 views
+11-02 03:33:55.065 22596 22596 I ImeTracker: com.allai.app.debug:171d1695: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false userId 0 displayId 0
+11-02 03:33:55.073 22596 22596 D InsetsController: show(ime())
+11-02 03:33:55.073 22596 22596 I ImeTracker: com.allai.app.debug:171d1695: onCancelled at PHASE_CLIENT_REPORT_REQUESTED_VISIBLE_TYPES
+11-02 03:33:55.302 22596 22596 D Autofill Status: Autofill popup isn't shown because autofill is not available.
+11-02 03:33:55.302 22596 22596 D Autofill Status: 
+11-02 03:33:55.302 22596 22596 D Autofill Status: Did you set up autofill?
+11-02 03:33:55.302 22596 22596 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced > Autofill Service
+11-02 03:33:55.302 22596 22596 D Autofill Status: 2. Pick a service
+11-02 03:33:55.302 22596 22596 D Autofill Status: 
+11-02 03:33:55.302 22596 22596 D Autofill Status: Did you add an account?
+11-02 03:33:55.302 22596 22596 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced
+11-02 03:33:55.302 22596 22596 D Autofill Status: 2. Click on the settings icon next to the Autofill Service
+11-02 03:33:55.302 22596 22596 D Autofill Status: 3. Add your account

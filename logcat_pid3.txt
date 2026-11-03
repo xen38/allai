@@ -1,0 +1,4 @@
+--------- beginning of system
+11-02 03:46:00.953 22596 22596 D InsetsController: hide(ime())
+11-02 03:46:00.953 22596 22596 I ImeTracker: com.allai.app.debug:e7257da1: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_BY_INSETS_API fromUser false userId 0 displayId 0
+11-02 03:46:00.957 22596 22596 D InsetsController: Setting requestedVisibleTypes to 503 (was 511)

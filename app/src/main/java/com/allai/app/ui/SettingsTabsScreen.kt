@@ -63,27 +63,27 @@ fun SettingsTabsScreen(settings: SettingsState, onTabSelected: (Int) -> Unit) {
         ) {
             Tab(
                 selected = selected == 0,
-                onClick = { selected = 0; onTabSelected(0) },
+                onClick = { selected = 0 },
                 text = { Text(text = "Provider", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             )
             Tab(
                 selected = selected == 1,
-                onClick = { selected = 1; onTabSelected(1) },
+                onClick = { selected = 1 },
                 text = { Text(text = "Agent", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             )
             Tab(
                 selected = selected == 2,
-                onClick = { selected = 2; onTabSelected(2) },
+                onClick = { selected = 2 },
                 text = { Text(text = "Security", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             )
             Tab(
                 selected = selected == 3,
-                onClick = { selected = 3; onTabSelected(3) },
+                onClick = { selected = 3 },
                 text = { Text(text = "Account", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             )
             Tab(
                 selected = selected == 4,
-                onClick = { selected = 4; onTabSelected(4) },
+                onClick = { selected = 4 },
                 text = { Text(text = "Integrations", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             )
         }

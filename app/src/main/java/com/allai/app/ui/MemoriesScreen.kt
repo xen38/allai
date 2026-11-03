@@ -166,7 +166,7 @@ private fun LearnedActionsTab(
 }
 
 @Composable
-private fun MemoryCard(
+fun MemoryCard(
     memory: Memory,
     store: MemoryStore,
     onRefresh: () -> Unit
@@ -255,7 +255,7 @@ private fun MemoryCard(
 }
 
 @Composable
-private fun LearnedActionCard(
+fun LearnedActionCard(
     action: LearnedAction,
     store: MemoryStore,
     onRefresh: () -> Unit

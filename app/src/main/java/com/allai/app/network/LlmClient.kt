@@ -45,7 +45,8 @@ object LlmClient {
     suspend fun fetchModels(provider: LlmProvider): List<String> {
         return withContext(Dispatchers.IO) {
             try {
-                val baseUrl = provider.baseUrl.takeIf { it.endsWith("/") } ?: provider.baseUrl + "/"
+                val base = provider.baseUrl.trim()
+                val baseUrl = base.takeIf { it.endsWith("/") } ?: base + "/"
                 val modelsUrl = baseUrl + "models"
                 val request = Request.Builder()
                     .url(modelsUrl)
@@ -76,11 +77,12 @@ object LlmClient {
         tools: List<String>,
         temperature: Double
     ): String {
-        val url = if (provider.baseUrl.endsWith("/chat/completions")) {
-            provider.baseUrl
-        } else {
-            provider.baseUrl.ifEmpty { "https://api.openai.com/v1/chat/completions" }
-                .takeIf { it.endsWith("/") }?.plus("chat/completions") ?: "$provider.baseUrl/chat/completions"
+        val base = provider.baseUrl.trim()
+        val url = when {
+            base.isEmpty() -> "https://api.openai.com/v1/chat/completions"
+            base.endsWith("/chat/completions") -> base
+            base.endsWith("/") -> base + "chat/completions"
+            else -> base + "/chat/completions"
         }
 
         val jsonMessages = messages.map { msg ->
