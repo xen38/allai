@@ -17,6 +17,7 @@ import com.allai.app.settings.SettingsState
 import com.allai.app.theme.AllaiTheme
 import com.allai.app.theme.AllaiBackground
 import com.allai.app.ui.AgentScreen
+import com.allai.app.ui.MemoriesScreen
 import com.allai.app.ui.OnboardingScreen
 import com.allai.app.ui.SettingsTabsScreen
 import com.allai.app.ui.TerminalScreen
@@ -53,7 +54,8 @@ private fun MainNav(settings: SettingsState) {
                     0 -> AgentScreen(settings)
                     1 -> TerminalScreen()
                     2 -> SessionsScreen()
-                    3 -> SettingsTabsScreen(settings, { selected = it })
+                    3 -> MemoriesScreen()
+                    4 -> SettingsTabsScreen(settings, { selected = it })
                 }
             }
 
@@ -111,9 +113,15 @@ private fun BottomBar(selected: Int, onTabSelected: (Int) -> Unit) {
         )
         BottomTab(
             modifier = Modifier.weight(1f),
-            text = "Settings",
+            text = "Memories",
             selected = selected == 3,
             onClick = { onTabSelected(3) }
+        )
+        BottomTab(
+            modifier = Modifier.weight(1f),
+            text = "Settings",
+            selected = selected == 4,
+            onClick = { onTabSelected(4) }
         )
     }
 }

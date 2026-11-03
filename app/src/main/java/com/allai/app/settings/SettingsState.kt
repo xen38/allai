@@ -8,7 +8,7 @@ class SettingsState(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("allai_settings", Context.MODE_PRIVATE)
 
     var providerName: String
-        get() = prefs.getString("provider_name", "openai") ?: "openai"
+        get() = prefs.getString("provider_name", "custom") ?: "custom"
         set(value) = prefs.edit().putString("provider_name", value).apply()
 
     var apiKey: String
@@ -16,7 +16,7 @@ class SettingsState(private val context: Context) {
         set(value) = prefs.edit().putString("api_key", value).apply()
 
     var model: String
-        get() = prefs.getString("model", "meta/llama-3.1-8b-instruct") ?: "meta/llama-3.1-8b-instruct"
+        get() = prefs.getString("model", "nvidia/nemotron-3-ultra-550b-a55b") ?: "nvidia/nemotron-3-ultra-550b-a55b"
         set(value) = prefs.edit().putString("model", value).apply()
 
     var baseUrl: String
