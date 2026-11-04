@@ -92,14 +92,15 @@ fun AgentScreen(settings: SettingsState) {
     }
 
     Box(modifier = Modifier.fillMaxSize().background(AllaiBackground)) {
-        val context = LocalContext.current
+        Column(modifier = Modifier.fillMaxSize()) {
+            val context = LocalContext.current
 
-        // Top bar: context button (left) + bubble button (right)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp, 8.dp, 16.dp, 0.dp)
-        ) {
+            // Top bar: context button (left) + bubble button (right)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp, 8.dp, 16.dp, 0.dp)
+            ) {
             // Context button - top left
             IconButton(
                 onClick = { /* show context menu with token consumption */ }
@@ -126,11 +127,12 @@ fun AgentScreen(settings: SettingsState) {
             }
         }
 
-        // Chat area - full empty box top-to-bottom
+        // Chat area - full empty box, scrollable, fills remaining space
         LazyColumn(
             modifier = Modifier
+                .weight(1f)
                 .fillMaxWidth()
-                .padding(16.dp, 56.dp, 16.dp, 140.dp),
+                .padding(16.dp, 56.dp, 16.dp, 0.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(messages, key = { it.hashCode().toString() }) { msg ->
@@ -143,16 +145,14 @@ fun AgentScreen(settings: SettingsState) {
             }
         }
 
-        // Bottom: model selector + chatbox + controls
-        Box(
+        // Bottom: model selector + chatbox + controls (pinned to bottom)
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp, 0.dp, 16.dp, 16.dp),
-            contentAlignment = Alignment.BottomCenter
+                .padding(16.dp, 0.dp, 16.dp, 16.dp)
         ) {
-            Column {
-                // Model selector button attached above chatbox
-                Row(
+            // Model selector button attached above chatbox
+            Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -252,26 +252,29 @@ fun AgentScreen(settings: SettingsState) {
                     .clickable { showingModelPicker = false },
                 contentAlignment = Alignment.TopCenter
             ) {
-                Column(
+                val models = if (availableModels.isNotEmpty()) availableModels else listOf(
+                    "meta/llama-3.1-8b-instruct",
+                    "meta/llama-3.1-70b-instruct",
+                    "meta/llama-3.1-405b-instruct",
+                    "nvidia/nemotron-3-405b-a55b",
+                    "nvidia/nemotron-3-ultra-550b-a55b",
+                    "google/gemma-2-27b-it",
+                    "mistralai/mistral-7b-instruct-v0.3",
+                    "anthropic/claude-3.5-sonnet",
+                    "openai/gpt-4o",
+                    "custom"
+                )
+                LazyColumn(
                     modifier = Modifier
                         .padding(16.dp, 56.dp, 16.dp, 0.dp)
-                        .width(240.dp),
+                        .width(240.dp)
+                        .height(420.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    val models = if (availableModels.isNotEmpty()) availableModels else listOf(
-                        "meta/llama-3.1-8b-instruct",
-                        "meta/llama-3.1-70b-instruct",
-                        "meta/llama-3.1-405b-instruct",
-                        "nvidia/nemotron-3-405b-a55b",
-                        "nvidia/nemotron-3-ultra-550b-a55b",
-                        "google/gemma-2-27b-it",
-                        "mistralai/mistral-7b-instruct-v0.3",
-                        "anthropic/claude-3.5-sonnet",
-                        "openai/gpt-4o",
-                        "custom"
-                    )
-
-                    models.forEach { model ->
+                    items(
+                        items = models,
+                        key = { it }
+                    ) { model ->
                         TextButton(
                             onClick = {
                                 currentModel = model

@@ -54,8 +54,7 @@ private fun MainNav(settings: SettingsState) {
                     0 -> AgentScreen(settings)
                     1 -> TerminalScreen()
                     2 -> SessionsScreen()
-                    3 -> MemoriesScreen()
-                    4 -> SettingsTabsScreen(settings, { selected = it })
+                    3 -> SettingsTabsScreen(settings, { selected = it })
                 }
             }
 
@@ -113,15 +112,9 @@ private fun BottomBar(selected: Int, onTabSelected: (Int) -> Unit) {
         )
         BottomTab(
             modifier = Modifier.weight(1f),
-            text = "Memories",
+            text = "Settings",
             selected = selected == 3,
             onClick = { onTabSelected(3) }
-        )
-        BottomTab(
-            modifier = Modifier.weight(1f),
-            text = "Settings",
-            selected = selected == 4,
-            onClick = { onTabSelected(4) }
         )
     }
 }
