@@ -51,6 +51,7 @@ fun AgentScreen(settings: SettingsState) {
     var showingWorkspaceDialog by remember { mutableStateOf(false) }
     var workspace by remember { mutableStateOf("Default") }
     var tokenInfo by remember { mutableStateOf("Tokens used: 0 / 128k (0%)") }
+    val currentModelLabel by remember { derivedStateOf { settings.model } }
 
     val initialized = remember { mutableStateOf(false) }
     if (!initialized.value) {
@@ -176,6 +177,7 @@ fun AgentScreen(settings: SettingsState) {
                         // Model selector button
                         OutlinedButton(
                             onClick = {
+                                currentModel = settings.model
                                 fetchModels()
                                 showingModelPicker = true
                             },
@@ -188,7 +190,7 @@ fun AgentScreen(settings: SettingsState) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = currentModel,
+                                    text = currentModelLabel,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.weight(1f),

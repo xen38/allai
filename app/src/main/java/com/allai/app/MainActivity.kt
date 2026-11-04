@@ -1,5 +1,6 @@
 package com.allai.app
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -7,12 +8,19 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.allai.app.model.Message
+import com.allai.app.model.Role
 import com.allai.app.settings.SettingsState
 import com.allai.app.theme.AllaiTheme
 import com.allai.app.theme.AllaiBackground
@@ -53,7 +61,7 @@ private fun MainNav(settings: SettingsState) {
                 when (selected) {
                     0 -> AgentScreen(settings)
                     1 -> TerminalScreen()
-                    2 -> SessionsScreen()
+                    2 -> SessionsScreen(settings)
                     3 -> SettingsTabsScreen(settings, { selected = it })
                 }
             }
@@ -63,25 +71,118 @@ private fun MainNav(settings: SettingsState) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SessionsScreen() {
-    Column(
-        modifier = Modifier.fillMaxSize().background(AllaiBackground),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        androidx.compose.material3.Text(
-            text = "Sessions",
-            style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
-            color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
+private fun SessionsScreen(settings: SettingsState) {
+    val context = LocalContext.current
+    val prefs = context.getSharedPreferences("allai_sessions", Context.MODE_PRIVATE)
+    val gson: com.google.gson.Gson = remember { com.google.gson.Gson() }
+    val sessions = remember {
+        mutableStateListOf<SessionInfo>().also {
+            val json = prefs.getString("sessions", "[]") ?: "[]"
+            val type = object : com.google.gson.reflect.TypeToken<List<SessionInfo>>() {}.type
+            val parsed = gson.fromJson(json, type) ?: emptyList<SessionInfo>()
+            it.addAll(parsed)
+        }
+    }
+    var newSession by remember { mutableStateOf(false) }
+    var sessionTitle by remember { mutableStateOf("") }
+
+    Column(modifier = Modifier.fillMaxSize().background(AllaiBackground)) {
+        TopAppBar(
+            title = { Text(text = "Sessions", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground) },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = AllaiBackground),
+            modifier = Modifier.fillMaxWidth(),
+            actions = {
+                IconButton(onClick = { newSession = true }) {
+                    Text(text = "✚", fontSize = 20.sp)
+                }
+            }
         )
-        androidx.compose.material3.Text(
-            text = "Your chat sessions will appear here.",
-            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
-        )
+
+        if (sessions.isEmpty()) {
+            Column(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(text = "No sessions yet", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = "Start a chat from the Chat tab to create a session.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(sessions, key = { it.id }) { session ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable { onSessionSelected(session, settings) },
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A102E))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(text = session.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(text = "${session.messageCount} messages", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(text = java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(session.timestamp)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
+
+        if (newSession) {
+            AlertDialog(
+                onDismissRequest = { newSession = false },
+                title = { Text(text = "New Session") },
+                text = {
+                    OutlinedTextField(
+                        value = sessionTitle,
+                        onValueChange = { sessionTitle = it },
+                        label = { Text(text = "Session title") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (sessionTitle.isNotBlank()) {
+                            val id = java.util.UUID.randomUUID().toString()
+                            val session = SessionInfo(id = id, title = sessionTitle, messageCount = 0, timestamp = System.currentTimeMillis(), messages = emptyList())
+                            sessions.add(session)
+                            saveSessions(sessions, prefs, gson)
+                            newSession = false
+                            sessionTitle = ""
+                        }
+                    }) {
+                        Text(text = "Create")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { newSession = false }) {
+                        Text(text = "Cancel")
+                    }
+                }
+            )
+        }
     }
 }
+
+private fun onSessionSelected(session: SessionInfo, settings: SettingsState) {
+    // Load session messages into AgentScreen chat; handled via navigating to Chat with preloaded messages
+    // For now, switch to Chat tab (agent will show; session restore wired via SessionStore if extended)
+}
+
+private fun saveSessions(sessions: List<SessionInfo>, prefs: android.content.SharedPreferences, gson: com.google.gson.Gson) {
+    prefs.edit().putString("sessions", gson.toJson(sessions)).apply()
+}
+
+data class SessionInfo(
+    val id: String,
+    val title: String,
+    val messageCount: Int,
+    val timestamp: Long,
+    val messages: List<Message> = emptyList()
+)
 
 @Composable
 private fun BottomBar(selected: Int, onTabSelected: (Int) -> Unit) {

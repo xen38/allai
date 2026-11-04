@@ -1,12 +1,21 @@
-package com.allai.app
+package com.allai.app.agent
 
+import com.allai.app.model.LlmProvider
 import com.allai.app.model.Message
-import com.allai.app.model.Role
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-class OpencodeLikeAgent {
-    fun run(messages: List<Message>): String {
-        // Stub agent loop: echo with tool-use scaffolding.
-        val last = messages.lastOrNull()?.text ?: ""
-        return "Allai agent received: '$last'. Tool-use and MCP loops are stubbed — wire LlmClient + PluginManager here."
+class OpencodeLikeAgent(private val provider: LlmProvider) {
+    private val loop = AgentLoop()
+
+    suspend fun run(messages: List<Message>): String {
+        return withContext(Dispatchers.Default) {
+            val config = AgentLoop.AgentConfig(
+                provider = provider,
+                systemPrompt = AgentLoop.DEFAULT_SYSTEM_PROMPT
+            )
+            val reply = loop.run(config, messages)
+            reply
+        }
     }
 }
