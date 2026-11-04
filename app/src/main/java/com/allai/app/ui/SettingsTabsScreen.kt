@@ -269,6 +269,8 @@ fun AgentSettingsScreen(settings: SettingsState) {
     var newMemTitle by remember { mutableStateOf("") }
     var newMemDesc by remember { mutableStateOf("") }
     var newMemAction by remember { mutableStateOf("") }
+    var showingSkillsDialog by remember { mutableStateOf(false) }
+    var skillsDialogValue by remember { mutableStateOf(settings.systemPrompt) }
 
     Column(modifier = Modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -362,11 +364,24 @@ fun AgentSettingsScreen(settings: SettingsState) {
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Button(
-                    onClick = { },
+                    onClick = {
+                        val current = settings.systemPrompt
+                        skillsDialogValue = if (skillsDialogValue.isEmpty()) current else ""
+                        showingSkillsDialog = true
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large
                 ) {
                     Text(text = "Manage Skills")
+                }
+
+                if (showingSkillsDialog) {
+                    SkillsDialog(
+                        onDismiss = { showingSkillsDialog = false },
+                        onSave = { skillsDialogValue = it; settings.systemPrompt = it; showingSkillsDialog = false },
+                        value = skillsDialogValue,
+                        onValueChange = { skillsDialogValue = it }
+                    )
                 }
 
                 Text(
@@ -522,6 +537,9 @@ private fun SecurityRow(title: String, subtitle: String, enabled: Boolean, onTog
 fun AccountSettingsScreen() {
     val context = LocalContext.current
     var googleAccount by remember { mutableStateOf<GoogleSignInAccount?>(null) }
+    var signedInEmail by remember { mutableStateOf("") }
+    var emailField by remember { mutableStateOf("") }
+    var passwordField by remember { mutableStateOf("") }
 
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
         .requestEmail()
@@ -617,27 +635,42 @@ fun AccountSettingsScreen() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedTextField(
-                    value = "",
-                    onValueChange = { },
+                    value = emailField,
+                    onValueChange = { emailField = it },
                     label = { Text(text = "Email") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
                     singleLine = true
                 )
                 OutlinedTextField(
-                    value = "",
-                    onValueChange = { },
+                    value = passwordField,
+                    onValueChange = { passwordField = it },
                     label = { Text(text = "Password") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
                     singleLine = true
                 )
                 Button(
-                    onClick = { },
+                    onClick = {
+                        val email = emailField
+                        val password = passwordField
+                        if (email.isNotBlank() && password.isNotBlank()) {
+                            signedInEmail = email
+                            emailField = ""
+                            passwordField = ""
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large
                 ) {
                     Text(text = "Sign in")
+                }
+                if (signedInEmail.isNotEmpty()) {
+                    Text(
+                        text = "Signed in with email: $signedInEmail",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -740,6 +773,39 @@ private fun AddMemoryDialog(
             TextButton(onClick = {
                 if (title.isNotBlank()) onSave(title, desc, action)
             }) {
+                Text(text = "Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun SkillsDialog(
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    var skillText by remember { mutableStateOf(value) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Manage Skills / Agent Instructions") },
+        text = {
+            OutlinedTextField(
+                value = skillText,
+                onValueChange = { skillText = it; onValueChange(it) },
+                label = { Text(text = "Skill / Instruction") },
+                modifier = Modifier.fillMaxWidth().height(140.dp),
+                maxLines = 8
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(skillText) }) {
                 Text(text = "Save")
             }
         },

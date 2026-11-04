@@ -165,6 +165,10 @@ class AccessibilityPlugin : PhonePlugin {
                 root?.performAction(direction)
                 ToolResult(callId = "", output = "Scrolled", ok = true)
             }
+            "close_app" -> {
+                service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
+                ToolResult(callId = "", output = "App sent to home (closed)", ok = true)
+            }
             else -> ToolResult("", "", "Unknown action: $action", false)
         }
     }

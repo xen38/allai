@@ -50,6 +50,11 @@ class MemoryStore(private val context: Context) {
         prefs.edit().putString("memories", "[]").apply()
     }
 
+    fun deleteLearnedAction(id: String) {
+        val actions = getLearnedActions().toMutableList().filter { it.id != id }
+        prefs.edit().putString("learned_actions", gson.toJson(actions)).apply()
+    }
+
     fun addLearnedAction(action: LearnedAction) {
         val actions = getLearnedActions().toMutableList()
         val existing = actions.indexOfFirst { it.name == action.name }

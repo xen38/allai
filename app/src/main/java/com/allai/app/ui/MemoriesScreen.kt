@@ -303,7 +303,7 @@ fun LearnedActionCard(
                         Text(text = "▶", color = AllaiSecondary)
                     }
                     IconButton(onClick = {
-                        store.deleteMemory(action.id)
+                        store.deleteLearnedAction(action.id)
                         onRefresh()
                     }) {
                         Text(text = "🗑", color = Color(0xFFFF4D4D))

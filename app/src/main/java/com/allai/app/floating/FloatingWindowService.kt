@@ -38,6 +38,7 @@ import com.allai.app.agent.AgentLoop
 import com.allai.app.model.Message
 import com.allai.app.model.Role
 import com.allai.app.theme.*
+import com.allai.app.ui.ChatState
 
 class FloatingWindowService : Service() {
     private lateinit var windowManager: WindowManager
@@ -133,10 +134,10 @@ class FloatingWindowService : Service() {
 @Composable
 private fun FloatingChatOverlay(onClose: () -> Unit) {
     val context = LocalContext.current
-    val settings = SettingsState(context)
-    val messages = mutableStateListOf<String>()
-    val inputState = remember { mutableStateOf<String>("") }
+    val settings = remember { SettingsState(context) }
     val scope = rememberCoroutineScope()
+    val messages = ChatState.messages
+    val inputState = remember { mutableStateOf<String>("") }
 
     Column(
         modifier = Modifier
@@ -172,20 +173,21 @@ private fun FloatingChatOverlay(onClose: () -> Unit) {
         ) {
             items(
                 items = messages,
-                key = { message -> message.hashCode().toString() }
-            ) { message ->
+                key = { it.hashCode().toString() }
+            ) { message: Message ->
+                val isUser = message.role == com.allai.app.model.Role.User
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = if (message.startsWith("You:")) Arrangement.End else Arrangement.Start
+                    horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
                 ) {
                     Text(
-                        text = message,
+                        text = message.text,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier
                             .padding(8.dp, 6.dp)
                             .background(
-                                if (message.startsWith("You:")) Color(0xFF4A148C) else Color(0xFF003366),
+                                if (isUser) Color(0xFF4A148C) else Color(0xFF003366),
                                 MaterialTheme.shapes.medium
                             )
                     )
@@ -212,8 +214,9 @@ private fun FloatingChatOverlay(onClose: () -> Unit) {
             Spacer(modifier = Modifier.width(4.dp))
             IconButton(onClick = {
                 if (inputState.value.isNotBlank()) {
-                    messages.add("You: ${inputState.value}")
+                    val text = inputState.value
                     inputState.value = ""
+                    messages.add(Message(com.allai.app.model.Role.User, text))
                     scope.launch {
                         try {
                             val agent = AgentLoop()
@@ -221,10 +224,10 @@ private fun FloatingChatOverlay(onClose: () -> Unit) {
                                 provider = settings.provider,
                                 systemPrompt = settings.systemPrompt
                             )
-                            val reply = agent.run(config, messages.map { Message(Role.User, it) }.toList())
-                            messages.add("Allai: $reply")
+                            val reply = agent.run(config, messages.toList())
+                            messages.add(Message(com.allai.app.model.Role.Agent, reply))
                         } catch (e: Exception) {
-                            messages.add("Allai: Error: ${e.message}")
+                            messages.add(Message(com.allai.app.model.Role.Agent, "Error: ${e.message}"))
                         }
                     }
                 }

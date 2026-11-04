@@ -16,6 +16,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Card
+import androidx.compose.material3.Button
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,18 +40,24 @@ import com.allai.app.theme.*
 
 @Composable
 fun AgentScreen(settings: SettingsState) {
-    val messages = remember { mutableStateListOf<Message>() }
+    val messages = ChatState.messages
     var input by remember { mutableStateOf("") }
     var currentModel by remember { mutableStateOf(settings.model) }
     var showingModelPicker by remember { mutableStateOf(false) }
     var availableModels = remember { mutableStateListOf<String>() }
     val scope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
+    var showingContextDialog by remember { mutableStateOf(false) }
+    var showingWorkspaceDialog by remember { mutableStateOf(false) }
+    var workspace by remember { mutableStateOf("Default") }
+    var tokenInfo by remember { mutableStateOf("Tokens used: 0 / 128k (0%)") }
 
     val initialized = remember { mutableStateOf(false) }
     if (!initialized.value) {
         initialized.value = true
-        messages.add(Message(Role.System, settings.systemPrompt))
+        if (messages.isEmpty()) {
+            messages.add(Message(Role.System, settings.systemPrompt))
+        }
         LaunchedEffect(Unit) {
             focusRequester.requestFocus()
         }
@@ -103,7 +111,10 @@ fun AgentScreen(settings: SettingsState) {
             ) {
             // Context button - top left
             IconButton(
-                onClick = { /* show context menu with token consumption */ }
+                onClick = {
+                    tokenInfo = "Tokens used: ${messages.size} messages / 128k (~${(messages.size * 1.5).toInt()}%)"
+                    showingContextDialog = true
+                }
             ) {
                 Text(text = "📊", fontSize = 20.sp)
             }
@@ -194,7 +205,7 @@ fun AgentScreen(settings: SettingsState) {
 
                         // Workspace button
                         IconButton(
-                            onClick = { },
+                            onClick = { showingWorkspaceDialog = true },
                             modifier = Modifier.size(40.dp)
                         ) {
                             Text(text = "🏢", fontSize = 18.sp)
@@ -296,6 +307,42 @@ fun AgentScreen(settings: SettingsState) {
                                     Text(text = "✓", color = MaterialTheme.colorScheme.primary)
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Context / token dialog overlay
+        if (showingContextDialog) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color(0x000000).copy(alpha = 0.4f)).clickable { showingContextDialog = false },
+                contentAlignment = Alignment.Center
+            ) {
+                Card(modifier = Modifier.width(260.dp).padding(16.dp), shape = MaterialTheme.shapes.large) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(text = "Context / Token Usage", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                        Text(text = tokenInfo, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Button(onClick = { showingContextDialog = false }, modifier = Modifier.fillMaxWidth()) {
+                            Text(text = "Close")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Workspace dialog overlay
+        if (showingWorkspaceDialog) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color(0x000000).copy(alpha = 0.4f)).clickable { showingWorkspaceDialog = false },
+                contentAlignment = Alignment.Center
+            ) {
+                Card(modifier = Modifier.width(260.dp).padding(16.dp), shape = MaterialTheme.shapes.large) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(text = "Workspace", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                        Text(text = "Current: $workspace", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Button(onClick = { showingWorkspaceDialog = false }, modifier = Modifier.fillMaxWidth()) {
+                            Text(text = "Close")
                         }
                     }
                 }

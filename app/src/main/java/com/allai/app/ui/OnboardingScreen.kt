@@ -9,8 +9,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import com.allai.app.theme.AllaiTheme
 import com.allai.app.settings.SettingsState
+import com.allai.app.network.LlmClient
 
 @Composable
 fun OnboardingScreen(onComplete: () -> Unit) {
@@ -23,6 +27,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     var dropdownOpen by remember { mutableStateOf(false) }
 
     val providers = listOf("openai", "anthropic", "google", "custom")
+    val scope = remember { CoroutineScope(Dispatchers.Main) }
 
     Column(
         modifier = Modifier
@@ -147,6 +152,14 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         baseUrl = baseUrl,
                         systemPrompt = settings.systemPrompt
                     )
+                    scope.launch {
+                        try {
+                            val models = LlmClient.fetchModels(settings.provider)
+                            if (models.isNotEmpty()) {
+                                settings.model = models.first()
+                            }
+                        } catch (e: Exception) { }
+                    }
                     onComplete()
                 }
             },
