@@ -3,6 +3,7 @@ package com.allai.app
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -55,6 +56,14 @@ private fun MainNav(settings: SettingsState) {
         })
     } else {
         var selected by remember { mutableIntStateOf(0) }
+        var bubbleAutoStarted by remember { mutableStateOf(false) }
+
+        LaunchedEffect(Unit) {
+            if (!bubbleAutoStarted && Settings.canDrawOverlays(context)) {
+                com.allai.app.floating.FloatingWindowService.start(context)
+                bubbleAutoStarted = true
+            }
+        }
 
         Column(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.weight(1f)) {
