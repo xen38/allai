@@ -223,6 +223,16 @@ class LauncherPlugin(private val context: Context) : PhonePlugin {
                     ToolResult(callId = "", output = "", error = e.message ?: "Unknown error", ok = false)
                 }
             }
+            "close" -> {
+                val packageName = arguments["package"] as? String ?: return ToolResult("", "", "Missing 'package' argument", false)
+                try {
+                    val am = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+                    am.killBackgroundProcesses(packageName)
+                    ToolResult(callId = "", output = "Closed/killed $packageName", ok = true)
+                } catch (e: Exception) {
+                    ToolResult(callId = "", output = "", error = e.message ?: "Unknown error", ok = false)
+                }
+            }
             "list" -> {
                 val packages = context.packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
                     .map { it.packageName }

@@ -17,6 +17,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -498,22 +501,35 @@ private fun SecuritySettingsScreen() {
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                SecurityRow(title = "Accessibility", subtitle = "Read/interact with any app screen", enabled = true, onToggle = { })
-                SecurityRow(title = "Camera", subtitle = "Take photos and scan", enabled = true, onToggle = { })
-                SecurityRow(title = "Microphone", subtitle = "Voice commands", enabled = true, onToggle = { })
-                SecurityRow(title = "Contacts", subtitle = "Read and message contacts", enabled = true, onToggle = { })
-                SecurityRow(title = "SMS", subtitle = "Send and read text messages", enabled = true, onToggle = { })
-                SecurityRow(title = "Files", subtitle = "Read and write device storage", enabled = true, onToggle = { })
-                SecurityRow(title = "Location", subtitle = "Know where you are", enabled = true, onToggle = { })
-                SecurityRow(title = "Install Apps", subtitle = "Install new applications", enabled = true, onToggle = { })
-                SecurityRow(title = "Overlay", subtitle = "Show floating window on top", enabled = true, onToggle = { })
+                val ctx = LocalContext.current
+                SecurityRow(title = "Accessibility", subtitle = "Read/interact with any app screen", key = "perm_accessibility", onAction = { enabled ->
+                    if (enabled) {
+                        ctx.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                })
+                SecurityRow(title = "Camera", subtitle = "Take photos and scan", key = "perm_camera", onAction = { })
+                SecurityRow(title = "Microphone", subtitle = "Voice commands", key = "perm_microphone", onAction = { })
+                SecurityRow(title = "Contacts", subtitle = "Read and message contacts", key = "perm_contacts", onAction = { })
+                SecurityRow(title = "SMS", subtitle = "Send and read text messages", key = "perm_sms", onAction = { })
+                SecurityRow(title = "Files", subtitle = "Read and write device storage", key = "perm_files", onAction = { })
+                SecurityRow(title = "Location", subtitle = "Know where you are", key = "perm_location", onAction = { })
+                SecurityRow(title = "Install Apps", subtitle = "Install new applications", key = "perm_install", onAction = { })
+                SecurityRow(title = "Overlay", subtitle = "Show floating window on top", key = "perm_overlay", onAction = { enabled ->
+                    if (enabled) {
+                        ctx.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                })
             }
         }
     }
 }
 
 @Composable
-private fun SecurityRow(title: String, subtitle: String, enabled: Boolean, onToggle: (Boolean) -> Unit) {
+private fun SecurityRow(title: String, subtitle: String, key: String, onAction: (Boolean) -> Unit) {
+    val ctx = LocalContext.current
+    val prefs = ctx.getSharedPreferences("allai_permissions", android.content.Context.MODE_PRIVATE)
+    var enabled by remember(key) { mutableStateOf(prefs.getBoolean(key, true)) }
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -524,7 +540,11 @@ private fun SecurityRow(title: String, subtitle: String, enabled: Boolean, onTog
         }
         Switch(
             checked = enabled,
-            onCheckedChange = onToggle,
+            onCheckedChange = { v ->
+                enabled = v
+                prefs.edit().putBoolean(key, v).apply()
+                onAction(v)
+            },
             colors = SwitchDefaults.colors(
                 checkedTrackColor = MaterialTheme.colorScheme.primary,
                 checkedThumbColor = MaterialTheme.colorScheme.onPrimary
@@ -697,20 +717,23 @@ fun IntegrationsSettingsScreen() {
             colors = CardDefaults.cardColors(containerColor = Color(0xFF1A102E))
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                IntegrationRow(title = "Shell / Terminal", subtitle = "Run commands on your device", enabled = true)
-                IntegrationRow(title = "File System", subtitle = "Read and write files", enabled = true)
-                IntegrationRow(title = "Contacts", subtitle = "Access your contacts", enabled = true)
-                IntegrationRow(title = "SMS", subtitle = "Send text messages", enabled = true)
-                IntegrationRow(title = "App Launcher", subtitle = "Open any installed app", enabled = true)
-                IntegrationRow(title = "MCP Servers", subtitle = "Connect to Model Context Protocol servers", enabled = true)
-                IntegrationRow(title = "Accessibility", subtitle = "Interact with other apps' UI", enabled = true)
+                IntegrationRow(title = "Shell / Terminal", subtitle = "Run commands on your device", key = "int_terminal")
+                IntegrationRow(title = "File System", subtitle = "Read and write files", key = "int_filesystem")
+                IntegrationRow(title = "Contacts", subtitle = "Access your contacts", key = "int_contacts")
+                IntegrationRow(title = "SMS", subtitle = "Send text messages", key = "int_sms")
+                IntegrationRow(title = "App Launcher", subtitle = "Open any installed app", key = "int_launcher")
+                IntegrationRow(title = "MCP Servers", subtitle = "Connect to Model Context Protocol servers", key = "int_mcp")
+                IntegrationRow(title = "Accessibility", subtitle = "Interact with other apps' UI", key = "int_accessibility")
             }
         }
     }
 }
 
 @Composable
-private fun IntegrationRow(title: String, subtitle: String, enabled: Boolean) {
+private fun IntegrationRow(title: String, subtitle: String, key: String) {
+    val ctx = LocalContext.current
+    val prefs = ctx.getSharedPreferences("allai_integrations", android.content.Context.MODE_PRIVATE)
+    var enabled by remember(key) { mutableStateOf(prefs.getBoolean(key, true)) }
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -721,7 +744,10 @@ private fun IntegrationRow(title: String, subtitle: String, enabled: Boolean) {
         }
         Switch(
             checked = enabled,
-            onCheckedChange = { },
+            onCheckedChange = { v ->
+                enabled = v
+                prefs.edit().putBoolean(key, v).apply()
+            },
             colors = SwitchDefaults.colors(
                 checkedTrackColor = MaterialTheme.colorScheme.primary,
                 checkedThumbColor = MaterialTheme.colorScheme.onPrimary
