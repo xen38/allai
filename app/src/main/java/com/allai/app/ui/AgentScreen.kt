@@ -52,6 +52,9 @@ fun AgentScreen(settings: SettingsState) {
     var workspace by remember { mutableStateOf("Default") }
     var tokenInfo by remember { mutableStateOf("Tokens used: 0 / 128k (0%)") }
     val currentModelLabel by remember { derivedStateOf { settings.model } }
+    val context = LocalContext.current
+    val sPrefs = context.getSharedPreferences("allai_sessions", android.content.Context.MODE_PRIVATE)
+    val sGson = remember { com.google.gson.Gson() }
 
     val initialized = remember { mutableStateOf(false) }
     if (!initialized.value) {
@@ -93,6 +96,12 @@ fun AgentScreen(settings: SettingsState) {
                     )
                     val reply = agentLoop.run(config, messages.toList())
                     messages.add(Message(Role.Agent, reply))
+                    // Persist the conversation to the active session so it can be reloaded
+                    val activeId = SessionState.activeSessionId
+                    if (activeId != null) {
+                        SessionState.setMessages(activeId, messages.toList())
+                        SessionState.saveToPrefs(sPrefs, sGson, SessionState.sessions)
+                    }
                 } catch (e: Exception) {
                     messages.add(Message(Role.Agent, "Error: ${e.message}"))
                 }
@@ -218,6 +227,7 @@ fun AgentScreen(settings: SettingsState) {
                             onClick = {
                                 messages.clear()
                                 messages.add(Message(Role.System, settings.systemPrompt))
+                                SessionState.activeSessionId = null
                             },
                             modifier = Modifier.size(40.dp)
                         ) {

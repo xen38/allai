@@ -1,6 +1,5 @@
 package com.allai.app
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.provider.Settings
@@ -20,14 +19,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.allai.app.model.Message
-import com.allai.app.model.Role
 import com.allai.app.settings.SettingsState
 import com.allai.app.theme.AllaiTheme
 import com.allai.app.theme.AllaiBackground
 import com.allai.app.ui.AgentScreen
-import com.allai.app.ui.MemoriesScreen
+import com.allai.app.ui.ChatState
 import com.allai.app.ui.OnboardingScreen
+import com.allai.app.ui.SessionInfo
+import com.allai.app.ui.SessionState
 import com.allai.app.ui.SettingsTabsScreen
 import com.allai.app.ui.TerminalScreen
 
@@ -47,6 +46,7 @@ class MainActivity : ComponentActivity() {
 private fun MainNav(settings: SettingsState) {
     val context = LocalContext.current
     val prefs: SharedPreferences = context.getSharedPreferences("allai_onboarding", android.content.Context.MODE_PRIVATE)
+
     var onboardingComplete by remember { mutableStateOf(prefs.getBoolean("onboarding_complete", false)) }
 
     if (!onboardingComplete || settings.apiKey.isBlank()) {
@@ -56,21 +56,13 @@ private fun MainNav(settings: SettingsState) {
         })
     } else {
         var selected by remember { mutableIntStateOf(0) }
-        var bubbleAutoStarted by remember { mutableStateOf(false) }
-
-        LaunchedEffect(Unit) {
-            if (!bubbleAutoStarted && Settings.canDrawOverlays(context)) {
-                com.allai.app.floating.FloatingWindowService.start(context)
-                bubbleAutoStarted = true
-            }
-        }
 
         Column(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.weight(1f)) {
                 when (selected) {
                     0 -> AgentScreen(settings)
                     1 -> TerminalScreen()
-                    2 -> SessionsScreen(settings)
+                    2 -> SessionsScreen(settings, { selected = it })
                     3 -> SettingsTabsScreen(settings, { selected = it })
                 }
             }
@@ -82,18 +74,21 @@ private fun MainNav(settings: SettingsState) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SessionsScreen(settings: SettingsState) {
+private fun SessionsScreen(settings: SettingsState, onTabSelected: (Int) -> Unit) {
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("allai_sessions", Context.MODE_PRIVATE)
-    val gson: com.google.gson.Gson = remember { com.google.gson.Gson() }
-    val sessions = remember {
-        mutableStateListOf<SessionInfo>().also {
-            val json = prefs.getString("sessions", "[]") ?: "[]"
+    val prefs = context.getSharedPreferences("allai_sessions", android.content.Context.MODE_PRIVATE)
+    val gson = remember { com.google.gson.Gson() }
+
+    // Load persisted sessions synchronously during composition into an observable list
+    val localSessions = remember {
+        mutableStateListOf<SessionInfo>().apply {
+            val json = prefs.getString("allai_sessions", "[]") ?: "[]"
             val type = object : com.google.gson.reflect.TypeToken<List<SessionInfo>>() {}.type
-            val parsed = gson.fromJson(json, type) ?: emptyList<SessionInfo>()
-            it.addAll(parsed)
+            val list: List<SessionInfo> = gson.fromJson(json, type) ?: emptyList()
+            addAll(list)
         }
     }
+
     var newSession by remember { mutableStateOf(false) }
     var sessionTitle by remember { mutableStateOf("") }
 
@@ -109,7 +104,7 @@ private fun SessionsScreen(settings: SettingsState) {
             }
         )
 
-        if (sessions.isEmpty()) {
+        if (localSessions.isEmpty()) {
             Column(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -123,9 +118,16 @@ private fun SessionsScreen(settings: SettingsState) {
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(sessions, key = { it.id }) { session ->
+                items(localSessions, key = { it.id }) { session ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().clickable { onSessionSelected(session, settings) },
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            // Load session messages into the shared chat and switch to Chat tab
+                            val messages = localSessions.firstOrNull { it.id == session.id }?.messages ?: emptyList()
+                            ChatState.messages.clear()
+                            ChatState.messages.addAll(messages)
+                            SessionState.activeSessionId = session.id
+                            onTabSelected(0)
+                        },
                         shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(containerColor = Color(0xFF1A102E))
                     ) {
@@ -156,9 +158,9 @@ private fun SessionsScreen(settings: SettingsState) {
                     TextButton(onClick = {
                         if (sessionTitle.isNotBlank()) {
                             val id = java.util.UUID.randomUUID().toString()
-                            val session = SessionInfo(id = id, title = sessionTitle, messageCount = 0, timestamp = System.currentTimeMillis(), messages = emptyList())
-                            sessions.add(session)
-                            saveSessions(sessions, prefs, gson)
+                            val session = SessionState.createSession(id, sessionTitle)
+                            localSessions.add(session)
+                            SessionState.saveToPrefs(prefs, gson, localSessions.toList())
                             newSession = false
                             sessionTitle = ""
                         }
@@ -175,23 +177,6 @@ private fun SessionsScreen(settings: SettingsState) {
         }
     }
 }
-
-private fun onSessionSelected(session: SessionInfo, settings: SettingsState) {
-    // Load session messages into AgentScreen chat; handled via navigating to Chat with preloaded messages
-    // For now, switch to Chat tab (agent will show; session restore wired via SessionStore if extended)
-}
-
-private fun saveSessions(sessions: List<SessionInfo>, prefs: android.content.SharedPreferences, gson: com.google.gson.Gson) {
-    prefs.edit().putString("sessions", gson.toJson(sessions)).apply()
-}
-
-data class SessionInfo(
-    val id: String,
-    val title: String,
-    val messageCount: Int,
-    val timestamp: Long,
-    val messages: List<Message> = emptyList()
-)
 
 @Composable
 private fun BottomBar(selected: Int, onTabSelected: (Int) -> Unit) {
@@ -229,7 +214,6 @@ private fun BottomBar(selected: Int, onTabSelected: (Int) -> Unit) {
         )
     }
 }
-
 
 @Composable
 private fun BottomTab(
