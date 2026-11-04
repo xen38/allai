@@ -17,6 +17,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -27,6 +30,7 @@ import com.allai.app.model.LearnedAction
 import com.allai.app.theme.AllaiTheme
 import com.allai.app.settings.SettingsState
 import com.allai.app.theme.*
+import com.allai.app.network.LlmClient
 
 import kotlin.collections.MutableList
 
@@ -42,18 +46,20 @@ fun SettingsTabsScreen(settings: SettingsState, onTabSelected: (Int) -> Unit) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .weight(1f)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            when (selected) {
-                0 -> ProviderSettingsScreen(settings)
-                1 -> AgentSettingsScreen(settings)
-                2 -> SecuritySettingsScreen()
-                3 -> AccountSettingsScreen()
-                4 -> IntegrationsSettingsScreen()
+            item {
+                when (selected) {
+                    0 -> ProviderSettingsScreen(settings)
+                    1 -> AgentSettingsScreen(settings)
+                    2 -> SecuritySettingsScreen()
+                    3 -> AccountSettingsScreen()
+                    4 -> IntegrationsSettingsScreen()
+                }
             }
         }
 
@@ -122,8 +128,9 @@ fun ProviderSettingsScreen(settings: SettingsState) {
     var dropdownOpen by remember { mutableStateOf(false) }
 
     val providers = listOf("openai", "anthropic", "google", "custom")
+    val scope = rememberCoroutineScope()
 
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = "LLM Provider",
             style = MaterialTheme.typography.titleLarge,
@@ -230,6 +237,15 @@ fun ProviderSettingsScreen(settings: SettingsState) {
                             baseUrl = baseUrl,
                             systemPrompt = systemPrompt
                         )
+                        scope.launch {
+                            try {
+                                val models = com.allai.app.network.LlmClient.fetchModels(settings.provider)
+                                if (models.isNotEmpty()) {
+                                    model = models.first()
+                                    settings.model = model
+                                }
+                            } catch (e: Exception) { }
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large,
@@ -254,7 +270,7 @@ fun AgentSettingsScreen(settings: SettingsState) {
     var newMemDesc by remember { mutableStateOf("") }
     var newMemAction by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = Modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = "Agent",
             style = MaterialTheme.typography.titleLarge,
@@ -444,7 +460,7 @@ private fun LearnedActionsTab(
 
 @Composable
 private fun SecuritySettingsScreen() {
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = "Security",
             style = MaterialTheme.typography.titleLarge,
@@ -524,7 +540,7 @@ fun AccountSettingsScreen() {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = "Account",
             style = MaterialTheme.typography.titleLarge,
@@ -630,7 +646,7 @@ fun AccountSettingsScreen() {
 
 @Composable
 fun IntegrationsSettingsScreen() {
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = "Integrations",
             style = MaterialTheme.typography.titleLarge,

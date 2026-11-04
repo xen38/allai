@@ -211,6 +211,10 @@ class LauncherPlugin(private val context: Context) : PhonePlugin {
                     if (intent != null) {
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         context.startActivity(intent)
+                        // Auto-launch bubble mode so Allai hovers while interacting with the other app
+                        try {
+                            com.allai.app.floating.FloatingWindowService.start(context)
+                        } catch (e: Exception) { }
                         ToolResult(callId = "", output = "Launched $packageName", ok = true)
                     } else {
                         ToolResult(callId = "", output = "", error = "App not found: $packageName", ok = false)

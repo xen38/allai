@@ -62,7 +62,7 @@ class FloatingWindowService : Service() {
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 PixelFormat.TRANSLUCENT
             )
-            p.gravity = Gravity.TOP or Gravity.START
+            p.gravity = Gravity.TOP or Gravity.END
             p.x = 20
             p.y = 100
             p.width = 360
