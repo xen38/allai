@@ -89,6 +89,7 @@ private fun BottomBar(selected: Int, onTabSelected: (Int) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 8.dp)
+            .padding(bottom = 16.dp)
             .background(MaterialTheme.colorScheme.surface),
         verticalAlignment = Alignment.CenterVertically
     ) {
