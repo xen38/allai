@@ -34,6 +34,7 @@ import com.allai.app.theme.AllaiTheme
 import com.allai.app.settings.SettingsState
 import com.allai.app.theme.*
 import com.allai.app.network.LlmClient
+import com.allai.app.plugin.PluginManager
 
 import kotlin.collections.MutableList
 
@@ -832,6 +833,218 @@ private fun SkillsDialog(
         },
         confirmButton = {
             TextButton(onClick = { onSave(skillText) }) {
+                Text(text = "Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Cancel")
+            }
+        }
+    )
+}
+
+
+@Composable
+fun MemoryCard(
+    memory: Memory,
+    store: MemoryStore,
+    onRefresh: () -> Unit
+) {
+    var fav by remember { mutableStateOf(memory.favorite) }
+    var showingEdit by remember { mutableStateOf(false) }
+    var editTitle by remember { mutableStateOf(memory.title) }
+    var editDesc by remember { mutableStateOf(memory.description) }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF1A102E).copy(alpha = 0.8f),
+                        Color(0xFF0F0A1E).copy(alpha = 0.9f)
+                    )
+                ),
+                MaterialTheme.shapes.large
+            )
+            .border(
+                1.dp,
+                Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF7B2CBF).copy(alpha = 0.4f),
+                        Color(0xFF00D4FF).copy(alpha = 0.4f)
+                    )
+                ),
+                MaterialTheme.shapes.large
+            ),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A102E))
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    text = memory.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = AllaiOnSurface
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(onClick = {
+                        store.toggleFavorite(memory.id)
+                        fav = !fav
+                        onRefresh()
+                    }) {
+                        Text(text = if (fav) "\u2605" else "\u2606", color = Color(0xFFFF4D4D))
+                    }
+                    IconButton(onClick = {
+                        editTitle = memory.title
+                        editDesc = memory.description
+                        showingEdit = true
+                    }) {
+                        Text(text = "\u270F", color = AllaiSecondary)
+                    }
+                    IconButton(onClick = {
+                        store.deleteMemory(memory.id)
+                        onRefresh()
+                    }) {
+                        Text(text = "\uD83D\uDDD1", color = Color(0xFFFF4D4D))
+                    }
+                }
+            }
+            Text(
+                text = memory.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = AllaiOnSurfaceVariant
+            )
+        }
+    }
+
+    if (showingEdit) {
+        EditMemoryDialog(
+            onDismiss = { showingEdit = false },
+            onSave = { title, desc ->
+                store.updateMemory(memory.id, title, desc)
+                showingEdit = false
+                onRefresh()
+            },
+            title = editTitle,
+            desc = editDesc,
+            onTitleChange = { editTitle = it },
+            onDescChange = { editDesc = it }
+        )
+    }
+}
+
+@Composable
+fun LearnedActionCard(
+    action: LearnedAction,
+    store: MemoryStore,
+    onRefresh: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF1A102E).copy(alpha = 0.8f),
+                        Color(0xFF0F0A1E).copy(alpha = 0.9f)
+                    )
+                ),
+                MaterialTheme.shapes.large
+            )
+            .border(
+                1.dp,
+                Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF7B2CBF).copy(alpha = 0.4f),
+                        Color(0xFF00D4FF).copy(alpha = 0.4f)
+                    )
+                ),
+                MaterialTheme.shapes.large
+            ),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A102E))
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    text = action.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = AllaiOnSurface
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(onClick = {
+                        val result = PluginManager.run(action.tool, action.arguments)
+                        if (result.ok) {
+                            store.recordAction(action.name, action.description, action.tool, action.arguments)
+                            onRefresh()
+                        }
+                    }) {
+                        Text(text = "\u25B6", color = AllaiSecondary)
+                    }
+                    IconButton(onClick = {
+                        store.deleteLearnedAction(action.id)
+                        onRefresh()
+                    }) {
+                        Text(text = "\uD83D\uDDD1", color = Color(0xFFFF4D4D))
+                    }
+                }
+            }
+            Text(
+                text = action.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = AllaiOnSurfaceVariant
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    text = "Tool: ",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AllaiTertiary
+                )
+                Text(
+                    text = java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(action.lastUsed)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AllaiOnSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditMemoryDialog(
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit,
+    title: String,
+    desc: String,
+    onTitleChange: (String) -> Unit,
+    onDescChange: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Edit Memory") },
+        text = {
+            Column(modifier = Modifier.width(300.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = onTitleChange,
+                    label = { Text(text = "Title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = desc,
+                    onValueChange = onDescChange,
+                    label = { Text(text = "Description") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (title.isNotBlank()) onSave(title, desc)
+            }) {
                 Text(text = "Save")
             }
         },
