@@ -88,8 +88,17 @@ class FloatingWindowService : Service() {
                         true
                     }
                     MotionEvent.ACTION_MOVE -> {
-                        p.x = (initialParamsX + (event.rawX - initialTouchX)).toInt()
-                        p.y = (initialParamsY + (event.rawY - initialTouchY)).toInt()
+                        val display = wm.defaultDisplay
+                        val size = android.graphics.Point()
+                        display.getSize(size)
+                        val maxX = size.x - p.width
+                        val maxY = size.y - p.height
+                        var newX = (initialParamsX + (event.rawX - initialTouchX)).toInt()
+                        var newY = (initialParamsY + (event.rawY - initialTouchY)).toInt()
+                        newX = newX.coerceIn(0, maxX.coerceAtLeast(0))
+                        newY = newY.coerceIn(0, maxY.coerceAtLeast(0))
+                        p.x = newX
+                        p.y = newY
                         wm.updateViewLayout(v, p)
                         true
                     }
