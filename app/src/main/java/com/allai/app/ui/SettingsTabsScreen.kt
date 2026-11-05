@@ -232,6 +232,9 @@ fun ProviderSettingsScreen(settings: SettingsState) {
                     shape = MaterialTheme.shapes.medium
                 )
 
+                var connectionStatus by remember { mutableStateOf<String?>(null) }
+                var isTesting by remember { mutableStateOf(false) }
+
                 Button(
                     onClick = {
                         settings.save(
@@ -247,8 +250,13 @@ fun ProviderSettingsScreen(settings: SettingsState) {
                                 if (models.isNotEmpty()) {
                                     model = models.first()
                                     settings.model = model
+                                    connectionStatus = "Models discovered: ${models.size}"
+                                } else {
+                                    connectionStatus = "Saved. No models discovered via API."
                                 }
-                            } catch (e: Exception) { }
+                            } catch (e: Exception) {
+                                connectionStatus = "Save failed: ${e.message}"
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -256,6 +264,61 @@ fun ProviderSettingsScreen(settings: SettingsState) {
                     enabled = apiKey.isNotBlank()
                 ) {
                     Text(text = "Save Provider Settings")
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = {
+                            isTesting = true
+                            connectionStatus = null
+                            scope.launch {
+                                try {
+                                    val testProvider = com.allai.app.model.LlmProvider(
+                                        name = provider,
+                                        baseUrl = baseUrl,
+                                        model = model,
+                                        apiKey = apiKey,
+                                        isOpenAiCompatible = provider != "anthropic" && provider != "google"
+                                    )
+                                    val result = com.allai.app.network.LlmClient.testConnection(testProvider)
+                                    if (result.success) {
+                                        connectionStatus = "Connection OK" + (if (result.models.isNotEmpty()) " (${result.models.size} models)" else "")
+                                    } else {
+                                        connectionStatus = "Connection failed: ${result.error}"
+                                    }
+                                } catch (e: Exception) {
+                                    connectionStatus = "Error: ${e.message}"
+                                } finally {
+                                    isTesting = false
+                                }
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium,
+                        enabled = apiKey.isNotBlank() && !isTesting
+                    ) {
+                        if (isTesting) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(text = "Test Connection")
+                        }
+                    }
+
+                    val status = connectionStatus
+                    if (status != null) {
+                        Text(
+                            text = status,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (status.startsWith("OK") || status.startsWith("Saved")) Color(0xFF00D4FF) else Color(0xFFFF4D4D)
+                        )
+                    }
                 }
             }
         }
