@@ -12,7 +12,7 @@ class SettingsState(private val context: Context) {
         set(value) = prefs.edit().putString("provider_name", value).apply()
 
     var apiKey: String
-        get() = prefs.getString("api_key", "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") ?: "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"
+        get() = prefs.getString("api_key", "") ?: ""
         set(value) = prefs.edit().putString("api_key", value).apply()
 
     var model: String
