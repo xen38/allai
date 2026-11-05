@@ -36,7 +36,7 @@ object LlmClient {
     suspend fun sendMessage(
         provider: LlmProvider,
         messages: List<Message>,
-        tools: List<String> = emptyList(),
+        tools: List<ToolDefinition> = emptyList(),
         temperature: Double = 0.7
     ): String {
         return withContext(Dispatchers.IO) {
@@ -56,7 +56,7 @@ object LlmClient {
     suspend fun sendMessageStreaming(
         provider: LlmProvider,
         messages: List<Message>,
-        tools: List<String> = emptyList(),
+        tools: List<ToolDefinition> = emptyList(),
         temperature: Double = 0.7,
         onChunk: (String) -> Unit
     ): String {
@@ -77,7 +77,7 @@ object LlmClient {
     fun sendMessageStreamingFlow(
         provider: LlmProvider,
         messages: List<Message>,
-        tools: List<String> = emptyList(),
+        tools: List<ToolDefinition> = emptyList(),
         temperature: Double = 0.7
     ): Flow<String> = callbackFlow {
         val scope = kotlinx.coroutines.CoroutineScope(
@@ -213,7 +213,7 @@ object LlmClient {
     private suspend fun sendOpenAiCompatible(
         provider: LlmProvider,
         messages: List<Message>,
-        tools: List<String>,
+        tools: List<ToolDefinition>,
         temperature: Double
     ): String {
         val base = provider.baseUrl.trim()
@@ -242,20 +242,37 @@ object LlmClient {
             addProperty("temperature", temperature)
             addProperty("stream", false)
             if (tools.isNotEmpty()) {
-                add("tools", gson.toJsonTree(tools.map { toolName ->
-                    JsonObject().apply {
-                        addProperty("type", "function")
-                        add("function", JsonObject().apply {
-                            addProperty("name", toolName)
-                            addProperty("description", "Available tool: $toolName")
-                            add("parameters", JsonObject().apply {
-                                addProperty("type", "object")
-                                add("properties", JsonObject())
-                                addProperty("additionalProperties", true)
+add("tools", gson.toJsonTree(tools.map { td ->
+                        JsonObject().apply {
+                            addProperty("type", "function")
+                            add("function", JsonObject().apply {
+                                addProperty("name", td.name)
+                                addProperty("description", td.description)
+                                add("parameters", JsonObject().apply {
+                                    addProperty("type", "object")
+                                    val properties = JsonObject()
+                                    td.parameters.forEach { param ->
+                                        val propObj = JsonObject().apply {
+                                            addProperty("type", param.type)
+                                            if (param.description.isNotEmpty()) {
+                                                addProperty("description", param.description)
+                                            }
+                                            if (param.enumValues.isNotEmpty()) {
+                                                add("enum", gson.toJsonTree(param.enumValues))
+                                            }
+                                        }
+                                        properties.add(param.name, propObj)
+                                    }
+                                    add("properties", properties)
+                                    val required = td.parameters.filter { it.required }.map { it.name }
+                                    if (required.isNotEmpty()) {
+                                        add("required", gson.toJsonTree(required))
+                                    }
+                                    addProperty("additionalProperties", true)
+                                })
                             })
-                        })
-                    }
-                }))
+                        }
+                    }))
                 addProperty("tool_choice", "auto")
             }
         }
@@ -299,7 +316,7 @@ object LlmClient {
     private suspend fun sendOpenAiCompatibleStreaming(
         provider: LlmProvider,
         messages: List<Message>,
-        tools: List<String>,
+        tools: List<ToolDefinition>,
         temperature: Double,
         onChunk: (String) -> Unit
     ): String {
@@ -329,20 +346,37 @@ object LlmClient {
             addProperty("temperature", temperature)
             addProperty("stream", true)
             if (tools.isNotEmpty()) {
-                add("tools", gson.toJsonTree(tools.map { toolName ->
-                    JsonObject().apply {
-                        addProperty("type", "function")
-                        add("function", JsonObject().apply {
-                            addProperty("name", toolName)
-                            addProperty("description", "Available tool: $toolName")
-                            add("parameters", JsonObject().apply {
-                                addProperty("type", "object")
-                                add("properties", JsonObject())
-                                addProperty("additionalProperties", true)
+add("tools", gson.toJsonTree(tools.map { td ->
+                        JsonObject().apply {
+                            addProperty("type", "function")
+                            add("function", JsonObject().apply {
+                                addProperty("name", td.name)
+                                addProperty("description", td.description)
+                                add("parameters", JsonObject().apply {
+                                    addProperty("type", "object")
+                                    val properties = JsonObject()
+                                    td.parameters.forEach { param ->
+                                        val propObj = JsonObject().apply {
+                                            addProperty("type", param.type)
+                                            if (param.description.isNotEmpty()) {
+                                                addProperty("description", param.description)
+                                            }
+                                            if (param.enumValues.isNotEmpty()) {
+                                                add("enum", gson.toJsonTree(param.enumValues))
+                                            }
+                                        }
+                                        properties.add(param.name, propObj)
+                                    }
+                                    add("properties", properties)
+                                    val required = td.parameters.filter { it.required }.map { it.name }
+                                    if (required.isNotEmpty()) {
+                                        add("required", gson.toJsonTree(required))
+                                    }
+                                    addProperty("additionalProperties", true)
+                                })
                             })
-                        })
-                    }
-                }))
+                        }
+                    }))
                 addProperty("tool_choice", "auto")
             }
         }
@@ -454,7 +488,7 @@ object LlmClient {
     private suspend fun sendGeneric(
         provider: LlmProvider,
         messages: List<Message>,
-        tools: List<String>,
+        tools: List<ToolDefinition>,
         temperature: Double
     ): String {
         return sendOpenAiCompatible(provider, messages, tools, temperature)
@@ -463,7 +497,7 @@ object LlmClient {
     private suspend fun sendGenericStreaming(
         provider: LlmProvider,
         messages: List<Message>,
-        tools: List<String>,
+        tools: List<ToolDefinition>,
         temperature: Double,
         onChunk: (String) -> Unit
     ): String {
@@ -474,7 +508,7 @@ object LlmClient {
     private suspend fun sendAnthropic(
         provider: LlmProvider,
         messages: List<Message>,
-        tools: List<String>,
+        tools: List<ToolDefinition>,
         temperature: Double
     ): String {
         val base = provider.baseUrl.trim()
@@ -510,13 +544,30 @@ object LlmClient {
                 addProperty("system", systemMsg)
             }
             if (tools.isNotEmpty()) {
-                add("tools", gson.toJsonTree(tools.map { toolName ->
+                add("tools", gson.toJsonTree(tools.map { td ->
                     JsonObject().apply {
-                        addProperty("name", toolName)
-                        addProperty("description", "Available tool: $toolName")
+                        addProperty("name", td.name)
+                        addProperty("description", td.description)
                         add("input_schema", JsonObject().apply {
                             addProperty("type", "object")
-                            add("properties", JsonObject())
+                            val properties = JsonObject()
+                            td.parameters.forEach { param ->
+                                val propObj = JsonObject().apply {
+                                    addProperty("type", param.type)
+                                    if (param.description.isNotEmpty()) {
+                                        addProperty("description", param.description)
+                                    }
+                                    if (param.enumValues.isNotEmpty()) {
+                                        add("enum", gson.toJsonTree(param.enumValues))
+                                    }
+                                }
+                                properties.add(param.name, propObj)
+                            }
+                            add("properties", properties)
+                            val required = td.parameters.filter { it.required }.map { it.name }
+                            if (required.isNotEmpty()) {
+                                add("required", gson.toJsonTree(required))
+                            }
                             addProperty("additionalProperties", true)
                         })
                     }
@@ -569,7 +620,7 @@ object LlmClient {
     private suspend fun sendAnthropicStreaming(
         provider: LlmProvider,
         messages: List<Message>,
-        tools: List<String>,
+        tools: List<ToolDefinition>,
         temperature: Double,
         onChunk: (String) -> Unit
     ): String {
@@ -607,13 +658,30 @@ object LlmClient {
                 addProperty("system", systemMsg)
             }
             if (tools.isNotEmpty()) {
-                add("tools", gson.toJsonTree(tools.map { toolName ->
+                add("tools", gson.toJsonTree(tools.map { td ->
                     JsonObject().apply {
-                        addProperty("name", toolName)
-                        addProperty("description", "Available tool: $toolName")
+                        addProperty("name", td.name)
+                        addProperty("description", td.description)
                         add("input_schema", JsonObject().apply {
                             addProperty("type", "object")
-                            add("properties", JsonObject())
+                            val properties = JsonObject()
+                            td.parameters.forEach { param ->
+                                val propObj = JsonObject().apply {
+                                    addProperty("type", param.type)
+                                    if (param.description.isNotEmpty()) {
+                                        addProperty("description", param.description)
+                                    }
+                                    if (param.enumValues.isNotEmpty()) {
+                                        add("enum", gson.toJsonTree(param.enumValues))
+                                    }
+                                }
+                                properties.add(param.name, propObj)
+                            }
+                            add("properties", properties)
+                            val required = td.parameters.filter { it.required }.map { it.name }
+                            if (required.isNotEmpty()) {
+                                add("required", gson.toJsonTree(required))
+                            }
                             addProperty("additionalProperties", true)
                         })
                     }
@@ -690,7 +758,7 @@ object LlmClient {
     private suspend fun sendGoogle(
         provider: LlmProvider,
         messages: List<Message>,
-        tools: List<String>,
+        tools: List<ToolDefinition>,
         temperature: Double
     ): String {
         val base = provider.baseUrl.trim()
@@ -753,7 +821,7 @@ object LlmClient {
     private suspend fun sendGoogleStreaming(
         provider: LlmProvider,
         messages: List<Message>,
-        tools: List<String>,
+        tools: List<ToolDefinition>,
         temperature: Double,
         onChunk: (String) -> Unit
     ): String {

@@ -39,7 +39,7 @@ Guidelines:
             while (iteration < config.maxToolIterations) {
                 iteration++
 
-                val allTools = PluginManager.list().map { it.name }
+                val allTools = PluginManager.toolDefinitions()
                 val response = llm.sendMessage(
                     provider = config.provider,
                     messages = currentMessages,
@@ -85,7 +85,7 @@ Guidelines:
             while (iteration < config.maxToolIterations) {
                 iteration++
 
-                val allTools = PluginManager.list().map { it.name }
+                val allTools = PluginManager.toolDefinitions()
                 val response = llm.sendMessageStreaming(
                     provider = config.provider,
                     messages = currentMessages,

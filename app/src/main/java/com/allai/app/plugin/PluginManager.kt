@@ -16,6 +16,11 @@ import java.io.File
 interface PhonePlugin {
     val name: String
     val description: String
+    fun toolDefinition(): com.allai.app.model.ToolDefinition = com.allai.app.model.ToolDefinition(
+        name = name,
+        description = description,
+        parameters = emptyList()
+    )
     fun execute(arguments: Map<String, Any>): ToolResult
 }
 
@@ -39,6 +44,11 @@ object PluginManager {
     }
 
     fun list(): List<PhonePlugin> = plugins.values.toList()
+
+    fun toolDefinitions(): List<com.allai.app.model.ToolDefinition> =
+        plugins.values.map { it.toolDefinition() }
+
+    fun toolNames(): List<String> = plugins.keys.toList()
 
     fun run(name: String, arguments: Map<String, Any>): ToolResult {
         return plugins[name]?.execute(arguments) ?: ToolResult(

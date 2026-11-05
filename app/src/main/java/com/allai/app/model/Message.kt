@@ -34,3 +34,18 @@ data class LlmProvider(
     val apiKey: String,
     val isOpenAiCompatible: Boolean = true
 )
+
+data class ToolParameter(
+    val name: String,
+    val type: String,
+    val description: String = "",
+    val required: Boolean = false,
+    val enumValues: List<String> = emptyList()
+)
+
+data class ToolDefinition(
+    val name: String,
+    val description: String,
+    val parameters: List<ToolParameter> = emptyList(),
+    val strict: Boolean = false
+)
