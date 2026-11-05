@@ -2,7 +2,12 @@ package com.allai.app.model
 
 enum class Role { User, Agent, Tool, System }
 
-data class Message(val role: Role, val text: String, val timestamp: Long = System.currentTimeMillis())
+data class Message(
+    val role: Role,
+    val text: String,
+    val timestamp: Long = System.currentTimeMillis(),
+    val imageUrls: List<String> = emptyList()
+)
 
 data class ToolCall(
     val id: String,
