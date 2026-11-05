@@ -16,7 +16,7 @@ class AgentLoop {
     )
 
     companion object {
-        const val DEFAULT_SYSTEM_PROMPT = """You are Allai, an AI agent running natively on an Android device. You have access to tools that let you interact with the phone and run commands. 
+        const val DEFAULT_SYSTEM_PROMPT = """You are Allai, an AI agent running natively on an Android device. You have access to tools that let you interact with the phone and run commands.
 
 Available tools are provided in the conversation. When you need to use a tool, respond with exactly:
 TOOL_CALL:tool_name:{"arg1": "value1", "arg2": "value2"}
@@ -49,15 +49,12 @@ Guidelines:
 
                 val toolCalls = parseToolCalls(response)
                 if (toolCalls.isEmpty()) {
-                    // No tool calls - this is the final answer
                     currentMessages.add(Message(Role.Agent, response))
                     return@withContext response
                 }
 
-                // Add assistant message with tool calls
                 currentMessages.add(Message(Role.Agent, response))
 
-                // Execute all tool calls
                 for (toolCall in toolCalls) {
                     currentMessages.add(Message(Role.Tool, "", System.currentTimeMillis()))
                     val result = PluginManager.run(toolCall.name, toolCall.arguments)
@@ -66,13 +63,60 @@ Guidelines:
                 }
             }
 
-            // Max iterations reached - get final answer
             val finalResponse = llm.sendMessage(
                 provider = config.provider,
                 messages = currentMessages + Message(Role.User, "Please provide your final answer based on the tool results above."),
                 tools = emptyList(),
                 temperature = 0.5
             )
+            return@withContext finalResponse
+        }
+    }
+
+    suspend fun runStreaming(
+        config: AgentConfig,
+        messages: List<Message>,
+        onChunk: (String) -> Unit
+    ): String {
+        return withContext(Dispatchers.Default) {
+            var currentMessages = messages.toMutableList()
+            var iteration = 0
+
+            while (iteration < config.maxToolIterations) {
+                iteration++
+
+                val allTools = PluginManager.list().map { it.name }
+                val response = llm.sendMessageStreaming(
+                    provider = config.provider,
+                    messages = currentMessages,
+                    tools = allTools,
+                    temperature = 0.7,
+                    onChunk = onChunk
+                )
+
+                val toolCalls = parseToolCalls(response)
+                if (toolCalls.isEmpty()) {
+                    currentMessages.add(Message(Role.Agent, response))
+                    return@withContext response
+                }
+
+                currentMessages.add(Message(Role.Agent, response))
+
+                for (toolCall in toolCalls) {
+                    currentMessages.add(Message(Role.Tool, "", System.currentTimeMillis()))
+                    val result = PluginManager.run(toolCall.name, toolCall.arguments)
+                    val resultText = if (result.ok) result.output else "ERROR: ${result.error}"
+                    currentMessages.add(Message(Role.Tool, "TOOL_RESULT:${toolCall.name}:$resultText"))
+                }
+            }
+
+            val finalResponse = llm.sendMessage(
+                provider = config.provider,
+                messages = currentMessages + Message(Role.User, "Please provide your final answer based on the tool results above."),
+                tools = emptyList(),
+                temperature = 0.5
+            )
+            onChunk(finalResponse)
             return@withContext finalResponse
         }
     }

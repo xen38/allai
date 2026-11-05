@@ -11,13 +11,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.Card
-import androidx.compose.material3.Button
+import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,11 +33,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import com.allai.app.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgentScreen(settings: SettingsState) {
     val messages = ChatState.messages
     var input by remember { mutableStateOf("") }
-    var currentModel by remember { mutableStateOf(settings.model) }
     var showingModelPicker by remember { mutableStateOf(false) }
     var availableModels = remember { mutableStateListOf<String>() }
     val scope = rememberCoroutineScope()
@@ -50,8 +45,9 @@ fun AgentScreen(settings: SettingsState) {
     var showingContextDialog by remember { mutableStateOf(false) }
     var showingWorkspaceDialog by remember { mutableStateOf(false) }
     var workspace by remember { mutableStateOf("Default") }
+    var isStreaming by remember { mutableStateOf(false) }
+    var streamingMessage by remember { mutableStateOf("") }
     var tokenInfo by remember { mutableStateOf("Tokens used: 0 / 128k (0%)") }
-    val currentModelLabel by remember { derivedStateOf { settings.model } }
     val context = LocalContext.current
     val sPrefs = context.getSharedPreferences("allai_sessions", android.content.Context.MODE_PRIVATE)
     val sGson = remember { com.google.gson.Gson() }
@@ -84,26 +80,39 @@ fun AgentScreen(settings: SettingsState) {
     }
 
     val sendMessage = {
-        if (input.isNotBlank()) {
+        if (input.isNotBlank() && !isStreaming) {
             val text = input
             input = ""
+            focusRequester.requestFocus()
             messages.add(Message(Role.User, text))
+            isStreaming = true
+            streamingMessage = ""
+
+            val streamingIndex = messages.size
+            messages.add(Message(Role.Agent, ""))
+
             scope.launch {
                 try {
                     val config = AgentLoop.AgentConfig(
                         provider = settings.provider,
                         systemPrompt = settings.systemPrompt
                     )
-                    val reply = agentLoop.run(config, messages.toList())
-                    messages.add(Message(Role.Agent, reply))
-                    // Persist the conversation to the active session so it can be reloaded
+                    val reply = agentLoop.runStreaming(config, messages.toList()) { chunk ->
+                        streamingMessage += chunk
+                        messages[streamingIndex] = Message(Role.Agent, streamingMessage)
+                    }
+                    messages[streamingIndex] = Message(Role.Agent, reply)
+
                     val activeId = SessionState.activeSessionId
                     if (activeId != null) {
                         SessionState.setMessages(activeId, messages.toList())
                         SessionState.saveToPrefs(sPrefs, sGson, SessionState.sessions)
                     }
                 } catch (e: Exception) {
-                    messages.add(Message(Role.Agent, "Error: ${e.message}"))
+                    messages[streamingIndex] = Message(Role.Agent, "Error: ${e.message}")
+                } finally {
+                    isStreaming = false
+                    streamingMessage = ""
                 }
             }
         }
@@ -111,7 +120,7 @@ fun AgentScreen(settings: SettingsState) {
 
     Box(modifier = Modifier.fillMaxSize().background(AllaiBackground)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            val context = LocalContext.current
+            val ctx = LocalContext.current
 
             // Top bar: context button (left) + bubble button (right)
             Row(
@@ -119,66 +128,67 @@ fun AgentScreen(settings: SettingsState) {
                     .fillMaxWidth()
                     .padding(16.dp, 8.dp, 16.dp, 0.dp)
             ) {
-            // Context button - top left
-            IconButton(
-                onClick = {
-                    tokenInfo = "Tokens used: ${messages.size} messages / 128k (~${(messages.size * 1.5).toInt()}%)"
-                    showingContextDialog = true
+                // Context button - top left
+                IconButton(
+                    onClick = {
+                        val msgCount = messages.size
+                        val estTokens = (msgCount * 1.5).toInt()
+                        tokenInfo = "Tokens used: $msgCount messages / 128k (~${estTokens}%)"
+                        showingContextDialog = true
+                    }
+                ) {
+                    Text(text = "\u25B0", fontSize = 20.sp)
                 }
-            ) {
-                Text(text = "📊", fontSize = 20.sp)
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Bubble button - top right
+                IconButton(
+                    onClick = {
+                        if (!Settings.canDrawOverlays(ctx)) {
+                            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:${ctx.packageName}"))
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            ctx.startActivity(intent)
+                        } else {
+                            FloatingWindowService.start(ctx)
+                        }
+                    }
+                ) {
+                    Text(text = "\uD83E\uDDE7", fontSize = 18.sp)
+                }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Bubble button - top right
-            IconButton(
-                onClick = {
-                    if (!Settings.canDrawOverlays(context)) {
-                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            Uri.parse("package:${context.packageName}"))
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        context.startActivity(intent)
-                    } else {
-                        FloatingWindowService.start(context)
+            // Chat area - scrollable, fills remaining space
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(16.dp, 56.dp, 16.dp, 0.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(messages, key = { it.timestamp.toString() }) { msg ->
+                    when (msg.role) {
+                        Role.User -> UserBubble(msg.text)
+                        Role.Agent -> AgentBubble(msg.text, isStreaming = msg.text == streamingMessage && isStreaming)
+                        Role.Tool -> ToolBubble(msg.text)
+                        Role.System -> {}
                     }
                 }
+            }
+
+            // Bottom: model selector + chatbox + controls (pinned to bottom)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp, 8.dp, 16.dp, 16.dp)
             ) {
-                Text(text = "🫧", fontSize = 18.sp)
-            }
-        }
-
-        // Chat area - full empty box, scrollable, fills remaining space
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(16.dp, 56.dp, 16.dp, 0.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(messages, key = { it.hashCode().toString() }) { msg ->
-                when (msg.role) {
-                    Role.User -> UserBubble(msg.text)
-                    Role.Agent -> AgentBubble(msg.text)
-                    Role.Tool -> ToolBubble(msg.text)
-                    Role.System -> {}
-                }
-            }
-        }
-
-        // Bottom: model selector + chatbox + controls (pinned to bottom)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp, 0.dp, 16.dp, 16.dp)
-        ) {
-            // Model selector button attached above chatbox
-            Row(
+                // Model selector button attached above chatbox
+                Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Model selector + workspace + new session buttons row
                     Row(
                         modifier = Modifier.weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -186,12 +196,12 @@ fun AgentScreen(settings: SettingsState) {
                         // Model selector button
                         OutlinedButton(
                             onClick = {
-                                currentModel = settings.model
                                 fetchModels()
                                 showingModelPicker = true
                             },
                             modifier = Modifier.weight(1f),
-                            shape = MaterialTheme.shapes.large
+                            shape = MaterialTheme.shapes.large,
+                            enabled = !isStreaming
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -199,7 +209,7 @@ fun AgentScreen(settings: SettingsState) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = currentModelLabel,
+                                    text = settings.model,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.weight(1f),
@@ -207,7 +217,7 @@ fun AgentScreen(settings: SettingsState) {
                                     softWrap = false
                                 )
                                 Text(
-                                    text = "▼",
+                                    text = "\u25BE",
                                     color = MaterialTheme.colorScheme.primary,
                                     style = MaterialTheme.typography.labelLarge
                                 )
@@ -217,9 +227,10 @@ fun AgentScreen(settings: SettingsState) {
                         // Workspace button
                         IconButton(
                             onClick = { showingWorkspaceDialog = true },
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier.size(40.dp),
+                            enabled = !isStreaming
                         ) {
-                            Text(text = "🏢", fontSize = 18.sp)
+                            Text(text = "\uD83C\uDFE2", fontSize = 18.sp)
                         }
 
                         // New session button
@@ -228,10 +239,13 @@ fun AgentScreen(settings: SettingsState) {
                                 messages.clear()
                                 messages.add(Message(Role.System, settings.systemPrompt))
                                 SessionState.activeSessionId = null
+                                streamingMessage = ""
+                                isStreaming = false
                             },
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier.size(40.dp),
+                            enabled = !isStreaming
                         ) {
-                            Text(text = "📄", fontSize = 18.sp)
+                            Text(text = "\uD83D\uDCC4", fontSize = 18.sp)
                         }
                     }
 
@@ -239,9 +253,16 @@ fun AgentScreen(settings: SettingsState) {
                     IconButton(
                         onClick = { sendMessage() },
                         modifier = Modifier.size(40.dp),
-                        enabled = input.isNotBlank()
+                        enabled = input.isNotBlank() && !isStreaming
                     ) {
-                        Text(text = "▶", color = MaterialTheme.colorScheme.primary)
+                        if (isStreaming) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(text = "\u25B6", color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
 
@@ -264,97 +285,98 @@ fun AgentScreen(settings: SettingsState) {
                     )
                 }
             }
-        }
 
-        // Model picker dropdown (overlay)
-        if (showingModelPicker) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0x000000).copy(alpha = 0.3f))
-                    .clickable { showingModelPicker = false },
-                contentAlignment = Alignment.TopCenter
-            ) {
-                val models = if (availableModels.isNotEmpty()) availableModels else listOf(
-                    "meta/llama-3.1-8b-instruct",
-                    "meta/llama-3.1-70b-instruct",
-                    "meta/llama-3.1-405b-instruct",
-                    "nvidia/nemotron-3-405b-a55b",
-                    "nvidia/nemotron-3-ultra-550b-a55b",
-                    "google/gemma-2-27b-it",
-                    "mistralai/mistral-7b-instruct-v0.3",
-                    "anthropic/claude-3.5-sonnet",
-                    "openai/gpt-4o",
-                    "custom"
-                )
-                LazyColumn(
+            // Model picker dropdown (overlay)
+            if (showingModelPicker) {
+                Box(
                     modifier = Modifier
-                        .padding(16.dp, 56.dp, 16.dp, 0.dp)
-                        .width(240.dp)
-                        .height(420.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                        .fillMaxSize()
+                        .background(Color(0x000000).copy(alpha = 0.3f))
+                        .clickable { showingModelPicker = false },
+                    contentAlignment = Alignment.TopCenter
                 ) {
-                    items(
-                        items = models,
-                        key = { it }
-                    ) { model ->
-                        TextButton(
-                            onClick = {
-                                currentModel = model
-                                settings.model = model
-                                showingModelPicker = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                    val models = if (availableModels.isNotEmpty()) availableModels else listOf(
+                        "meta/llama-3.1-8b-instruct",
+                        "meta/llama-3.1-70b-instruct",
+                        "meta/llama-3.1-405b-instruct",
+                        "nvidia/nemotron-3-405b-a55b",
+                        "nvidia/nemotron-3-ultra-550b-a55b",
+                        "google/gemma-2-27b-it",
+                        "mistralai/mistral-7b-instruct-v0.3",
+                        "anthropic/claude-3.5-sonnet",
+                        "openai/gpt-4o",
+                        "custom"
+                    )
+                    LazyColumn(
+                        modifier = Modifier
+                            .padding(16.dp, 56.dp, 16.dp, 0.dp)
+                            .width(300.dp)
+                            .height(480.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(
+                            items = models,
+                            key = { it }
+                        ) { model ->
+                            TextButton(
+                                onClick = {
+                                    settings.model = model
+                                    showingModelPicker = false
+                                },
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text(
-                                    text = model,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = if (model == currentModel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                )
-                                if (model == currentModel) {
-                                    Text(text = "✓", color = MaterialTheme.colorScheme.primary)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = model,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = if (model == settings.model) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    if (model == settings.model) {
+                                        Text(text = "\u2713", color = MaterialTheme.colorScheme.primary)
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
 
-        // Context / token dialog overlay
-        if (showingContextDialog) {
-            Box(
-                modifier = Modifier.fillMaxSize().background(Color(0x000000).copy(alpha = 0.4f)).clickable { showingContextDialog = false },
-                contentAlignment = Alignment.Center
-            ) {
-                Card(modifier = Modifier.width(260.dp).padding(16.dp), shape = MaterialTheme.shapes.large) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(text = "Context / Token Usage", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                        Text(text = tokenInfo, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Button(onClick = { showingContextDialog = false }, modifier = Modifier.fillMaxWidth()) {
-                            Text(text = "Close")
+            // Context / token dialog overlay
+            if (showingContextDialog) {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color(0x000000).copy(alpha = 0.4f)).clickable { showingContextDialog = false },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(modifier = Modifier.width(280.dp).padding(16.dp), shape = MaterialTheme.shapes.large) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(text = "Context / Token Usage", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(text = tokenInfo, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(text = "Model: ${settings.model}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(text = "Provider: ${settings.providerName}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Button(onClick = { showingContextDialog = false }, modifier = Modifier.fillMaxWidth()) {
+                                Text(text = "Close")
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Workspace dialog overlay
-        if (showingWorkspaceDialog) {
-            Box(
-                modifier = Modifier.fillMaxSize().background(Color(0x000000).copy(alpha = 0.4f)).clickable { showingWorkspaceDialog = false },
-                contentAlignment = Alignment.Center
-            ) {
-                Card(modifier = Modifier.width(260.dp).padding(16.dp), shape = MaterialTheme.shapes.large) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(text = "Workspace", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                        Text(text = "Current: $workspace", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Button(onClick = { showingWorkspaceDialog = false }, modifier = Modifier.fillMaxWidth()) {
-                            Text(text = "Close")
+            // Workspace dialog overlay
+            if (showingWorkspaceDialog) {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color(0x000000).copy(alpha = 0.4f)).clickable { showingWorkspaceDialog = false },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(modifier = Modifier.width(280.dp).padding(16.dp), shape = MaterialTheme.shapes.large) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(text = "Workspace", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(text = "Current: $workspace", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Button(onClick = { showingWorkspaceDialog = false }, modifier = Modifier.fillMaxWidth()) {
+                                Text(text = "Close")
+                            }
                         }
                     }
                 }
@@ -387,14 +409,14 @@ private fun UserBubble(text: String) {
 }
 
 @Composable
-private fun AgentBubble(text: String) {
+private fun AgentBubble(text: String, isStreaming: Boolean = false) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Start
     ) {
         Column {
             Text(
-                text = text,
+                text = if (isStreaming) text + "…" else text,
                 modifier = Modifier
                     .padding(16.dp, 10.dp)
                     .background(
@@ -405,6 +427,14 @@ private fun AgentBubble(text: String) {
                 color = Color.White,
                 style = MaterialTheme.typography.bodyMedium
             )
+            if (isStreaming) {
+                Text(
+                    text = "streaming",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(4.dp, 0.dp, 0.dp, 0.dp)
+                )
+            }
         }
     }
 }

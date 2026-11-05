@@ -20,6 +20,13 @@ data class ToolResult(
     val ok: Boolean = true
 )
 
+data class StreamChunk(
+    val content: String,
+    val done: Boolean = false,
+    val toolCalls: List<ToolCall> = emptyList(),
+    val error: String? = null
+)
+
 data class LlmProvider(
     val name: String,
     val baseUrl: String,
