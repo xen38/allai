@@ -108,4 +108,45 @@ object SessionState {
     fun getCheckpoints(sessionId: String): List<SessionCheckpoint> {
         return checkpoints[sessionId] ?: emptyList()
     }
+
+    fun exportSession(sessionId: String): String? {
+        val session = getSession(sessionId) ?: return null
+        val sessionCheckpoints = checkpoints[sessionId] ?: emptyList()
+        val exportData = mapOf(
+            "session" to session,
+            "checkpoints" to sessionCheckpoints
+        )
+        return com.google.gson.Gson().toJson(exportData)
+    }
+
+    fun importSession(json: String, prefs: android.content.SharedPreferences, gson: com.google.gson.Gson): Boolean {
+        try {
+            val parser = com.google.gson.JsonParser.parseString(json).asJsonObject
+            val sessionJson = parser.getAsJsonObject("session")
+            val session = gson.fromJson(sessionJson, SessionInfo::class.java)
+            if (session == null) return false
+
+            val existingIdx = sessions.indexOfFirst { it.id == session.id }
+            if (existingIdx >= 0) {
+                sessions[existingIdx] = session
+            } else {
+                sessions.add(session)
+                checkpoints[session.id] = mutableListOf()
+            }
+
+            if (parser.has("checkpoints")) {
+                val cpsArray = parser.getAsJsonArray("checkpoints")
+                val cps = cpsArray.map { cpJson ->
+                    gson.fromJson(cpJson, SessionCheckpoint::class.java)
+                }.filterNotNull()
+                checkpoints[session.id] = cps.toMutableList()
+            }
+
+            saveToPrefs(prefs, gson, sessions)
+            saveCheckpointsToPrefs(prefs, gson)
+            return true
+        } catch (e: Exception) {
+            return false
+        }
+    }
 }
