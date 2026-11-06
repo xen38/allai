@@ -3,6 +3,7 @@ package com.allai.app.settings
 import android.content.Context
 import android.content.SharedPreferences
 import com.allai.app.model.LlmProvider
+import com.allai.app.security.SecurePrefs
 
 class SettingsState(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("allai_settings", Context.MODE_PRIVATE)
@@ -12,8 +13,8 @@ class SettingsState(private val context: Context) {
         set(value) = prefs.edit().putString("provider_name", value).apply()
 
     var apiKey: String
-        get() = prefs.getString("api_key", "") ?: ""
-        set(value) = prefs.edit().putString("api_key", value).apply()
+        get() = SecurePrefs.getString("api_key", "") ?: ""
+        set(value) = SecurePrefs.edit().putString("api_key", value).apply()
 
     var model: String
         get() = prefs.getString("model", "nvidia/nemotron-3-ultra-550b-a55b") ?: "nvidia/nemotron-3-ultra-550b-a55b"

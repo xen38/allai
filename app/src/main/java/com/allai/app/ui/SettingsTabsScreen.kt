@@ -473,6 +473,9 @@ private fun MemoriesTab(
     store: MemoryStore,
     memoryList: MutableList<Memory>
 ) {
+    var searchQuery by remember { mutableStateOf("") }
+    var showSuggested by remember { mutableStateOf(false) }
+
     Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
         Text(
             text = "Memories",
@@ -486,20 +489,80 @@ private fun MemoriesTab(
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        LazyColumn(
+        // Search field
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text(text = "Search memories") },
+            placeholder = { Text(text = "Filter by title or description...") },
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Suggested memories toggle
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            items(
-                items = memoryList as List<Memory>,
-                key = { it.id }
-            ) { memory: Memory ->
-                MemoryCard(
-                    memory = memory,
-                    store = store,
-                    onRefresh = { memoryList.clear(); memoryList.addAll(store.getMemories()) }
-                )
+            Checkbox(
+                checked = showSuggested,
+                onCheckedChange = { showSuggested = it }
+            )
+            Text(
+                text = "Show suggested memories (auto-inferred from interactions)",
+                style = MaterialTheme.typography.bodySmall,
+                color = AllaiOnSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        val filteredMemories = memoryList.filter { mem ->
+            searchQuery.isBlank() ||
+                mem.title.lowercase().contains(searchQuery.lowercase()) ||
+                mem.description.lowercase().contains(searchQuery.lowercase())
+        }
+
+        if (filteredMemories.isEmpty()) {
+            Text(
+                text = if (searchQuery.isNotEmpty()) "No memories matching '$searchQuery'" else "No memories yet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AllaiOnSurfaceVariant,
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 24.dp)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(
+                    items = filteredMemories,
+                    key = { it.id }
+                ) { memory: Memory ->
+                    MemoryCard(
+                        memory = memory,
+                        store = store,
+                        onRefresh = { memoryList.clear(); memoryList.addAll(store.getMemories()) },
+                        showSource = true
+                    )
+                }
             }
+        }
+
+        if (showSuggested) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Suggested Memories",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "No auto-suggested memories yet. Allai will suggest memories based on your interactions.",
+                style = MaterialTheme.typography.bodySmall,
+                color = AllaiOnSurfaceVariant
+            )
         }
     }
 }
@@ -584,6 +647,11 @@ private fun SecuritySettingsScreen() {
                             Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     }
                 })
+                SecurityRow(title = "Notifications", subtitle = "Read system notifications", key = "perm_notifications", onAction = { enabled ->
+                    if (enabled) {
+                        ctx.startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                })
             }
         }
     }
@@ -620,10 +688,20 @@ private fun SecurityRow(title: String, subtitle: String, key: String, onAction: 
 @Composable
 fun AccountSettingsScreen() {
     val context = LocalContext.current
-    var googleAccount by remember { mutableStateOf<GoogleSignInAccount?>(null) }
+    val accountPrefs = context.getSharedPreferences("allai_account", android.content.Context.MODE_PRIVATE)
+    var googleAccountEmail by remember { mutableStateOf<String?>(null) }
+    var googleAccountName by remember { mutableStateOf<String?>(null) }
     var signedInEmail by remember { mutableStateOf("") }
     var emailField by remember { mutableStateOf("") }
     var passwordField by remember { mutableStateOf("") }
+
+    // Restore saved Google account on compose
+    val savedEmail = remember { accountPrefs.getString("google_email", null) }
+    val savedName = remember { accountPrefs.getString("google_name", null) }
+    if (googleAccountEmail == null && savedEmail != null) {
+        googleAccountEmail = savedEmail
+        googleAccountName = savedName
+    }
 
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
         .requestEmail()
@@ -637,7 +715,14 @@ fun AccountSettingsScreen() {
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             if (task.isSuccessful) {
-                googleAccount = task.result
+                val account = task.result
+                googleAccountEmail = account.email
+                googleAccountName = account.displayName
+                // Persist account session
+                accountPrefs.edit()
+                    .putString("google_email", account.email ?: "")
+                    .putString("google_name", account.displayName ?: "")
+                    .apply()
             }
         }
     }
@@ -666,7 +751,7 @@ fun AccountSettingsScreen() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                if (googleAccount != null) {
+                if (googleAccountEmail != null) {
                     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             text = "Signed in as:",
@@ -674,19 +759,25 @@ fun AccountSettingsScreen() {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = googleAccount!!.displayName ?: "Unknown",
+                            text = googleAccountName ?: "Unknown",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = googleAccount!!.email ?: "No email",
+                            text = googleAccountEmail ?: "No email",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Button(
                             onClick = {
                                 googleSignInClient.signOut()
-                                googleAccount = null
+                                googleAccountEmail = null
+                                googleAccountName = null
+                                // Clear persisted account session
+                                accountPrefs.edit()
+                                    .remove("google_email")
+                                    .remove("google_name")
+                                    .apply()
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.large
@@ -912,7 +1003,8 @@ private fun SkillsDialog(
 fun MemoryCard(
     memory: Memory,
     store: MemoryStore,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    showSource: Boolean = false
 ) {
     var fav by remember { mutableStateOf(memory.favorite) }
     var showingEdit by remember { mutableStateOf(false) }
@@ -945,11 +1037,24 @@ fun MemoryCard(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    text = memory.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = AllaiOnSurface
-                )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = memory.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = AllaiOnSurface
+                    )
+                    if (showSource) {
+                        Text(
+                            text = if (memory.action.isNotEmpty()) "explicit" else "inferred",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (memory.action.isNotEmpty()) Color(0xFF00D4FF) else Color(0xFFE879F9)
+                        )
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     IconButton(onClick = {
                         store.toggleFavorite(memory.id)
@@ -978,6 +1083,13 @@ fun MemoryCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = AllaiOnSurfaceVariant
             )
+            if (showSource && memory.action.isNotEmpty()) {
+                Text(
+                    text = "Source: ${memory.action}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AllaiOnSurfaceVariant
+                )
+            }
         }
     }
 

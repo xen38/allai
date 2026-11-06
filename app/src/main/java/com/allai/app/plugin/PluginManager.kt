@@ -8,6 +8,8 @@ import android.net.Uri
 import android.provider.ContactsContract
 import android.telephony.SmsManager
 import com.allai.app.accessibility.AccessibilityPlugin
+import com.allai.app.analysis.ProjectPlugin
+import com.allai.app.notification.NotificationPluginWrapper
 import com.allai.app.self.SelfPlugin
 import com.allai.app.self.SkillPlugin
 import com.allai.app.AllaiApplication
@@ -48,6 +50,8 @@ object PluginManager {
         register(AccessibilityPlugin())
         register(SelfPlugin(context))
         register(SkillPlugin(context))
+        register(NotificationPluginWrapper())
+        register(ProjectPlugin(context))
     }
 
     fun register(plugin: PhonePlugin) {
