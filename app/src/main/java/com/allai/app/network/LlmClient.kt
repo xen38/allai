@@ -512,7 +512,6 @@ add("tools", gson.toJsonTree(tools.map { td ->
         temperature: Double
     ): String {
         val base = provider.baseUrl.trim()
-        val baseUrl = base.takeIf { it.endsWith("/") } ?: base + "/"
         val url = when {
             base.isEmpty() || base.contains("anthropic") -> "https://api.anthropic.com/v1/messages"
             base.endsWith("/messages") -> base
@@ -625,7 +624,6 @@ add("tools", gson.toJsonTree(tools.map { td ->
         onChunk: (String) -> Unit
     ): String {
         val base = provider.baseUrl.trim()
-        val baseUrl = base.takeIf { it.endsWith("/") } ?: base + "/"
         val url = when {
             base.isEmpty() || base.contains("anthropic") -> "https://api.anthropic.com/v1/messages"
             base.endsWith("/messages") -> base
@@ -762,7 +760,6 @@ add("tools", gson.toJsonTree(tools.map { td ->
         temperature: Double
     ): String {
         val base = provider.baseUrl.trim()
-        val baseUrl = base.takeIf { it.endsWith("/") } ?: base + "/"
         val url = when {
             base.isEmpty() || base.contains("googleapis") -> "https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${provider.apiKey}"
             base.endsWith("/") -> base + "${provider.model}:generateContent?key=${provider.apiKey}"
@@ -827,7 +824,6 @@ add("tools", gson.toJsonTree(tools.map { td ->
     ): String {
         // Google streaming via SSE - similar to non-streaming but with stream flag
         val base = provider.baseUrl.trim()
-        val baseUrl = base.takeIf { it.endsWith("/") } ?: base + "/"
         val url = when {
             base.isEmpty() || base.contains("googleapis") -> "https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:streamGenerateContent?key=${provider.apiKey}"
             base.endsWith("/") -> base + "${provider.model}:streamGenerateContent?key=${provider.apiKey}"
