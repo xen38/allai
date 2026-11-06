@@ -95,7 +95,8 @@ fun AgentScreen(settings: SettingsState) {
                 try {
                     val config = AgentLoop.AgentConfig(
                         provider = settings.provider,
-                        systemPrompt = settings.systemPrompt
+                        systemPrompt = settings.systemPrompt,
+                        context = context
                     )
                     val reply = agentLoop.runStreaming(config, messages.toList()) { chunk ->
                         streamingMessage += chunk
@@ -286,8 +287,9 @@ fun AgentScreen(settings: SettingsState) {
                 }
             }
 
-            // Model picker dropdown (overlay)
+                // Model picker dropdown (overlay)
             if (showingModelPicker) {
+                var searchQuery by remember { mutableStateOf("") }
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -295,47 +297,73 @@ fun AgentScreen(settings: SettingsState) {
                         .clickable { showingModelPicker = false },
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    val models = if (availableModels.isNotEmpty()) availableModels else listOf(
-                        "meta/llama-3.1-8b-instruct",
-                        "meta/llama-3.1-70b-instruct",
-                        "meta/llama-3.1-405b-instruct",
-                        "nvidia/nemotron-3-405b-a55b",
-                        "nvidia/nemotron-3-ultra-550b-a55b",
-                        "google/gemma-2-27b-it",
-                        "mistralai/mistral-7b-instruct-v0.3",
-                        "anthropic/claude-3.5-sonnet",
-                        "openai/gpt-4o",
-                        "custom"
-                    )
-                    LazyColumn(
+                    Column(
                         modifier = Modifier
                             .padding(16.dp, 56.dp, 16.dp, 0.dp)
-                            .width(300.dp)
-                            .height(480.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                            .width(320.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(
-                            items = models,
-                            key = { it }
-                        ) { model ->
-                            TextButton(
-                                onClick = {
-                                    settings.model = model
-                                    showingModelPicker = false
-                                },
-                                modifier = Modifier.fillMaxWidth()
+                        // Search field
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            label = { Text(text = "Search models") },
+                            placeholder = { Text(text = "Type to filter...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        val filteredModels = if (availableModels.isNotEmpty()) availableModels else listOf(
+                            "meta/llama-3.1-8b-instruct",
+                            "meta/llama-3.1-70b-instruct",
+                            "meta/llama-3.1-405b-instruct",
+                            "nvidia/nemotron-3-405b-a55b",
+                            "nvidia/nemotron-3-ultra-550b-a55b",
+                            "google/gemma-2-27b-it",
+                            "mistralai/mistral-7b-instruct-v0.3",
+                            "anthropic/claude-3.5-sonnet",
+                            "openai/gpt-4o",
+                            "custom"
+                        ).filter {
+                            searchQuery.isBlank() || it.lowercase().contains(searchQuery.lowercase())
+                        }
+
+                        if (filteredModels.isEmpty()) {
+                            Text(
+                                text = "No models matching '$searchQuery'",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 24.dp)
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = model,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = if (model == settings.model) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    if (model == settings.model) {
-                                        Text(text = "\u2713", color = MaterialTheme.colorScheme.primary)
+                                items(
+                                    items = filteredModels,
+                                    key = { it }
+                                ) { model ->
+                                    TextButton(
+                                        onClick = {
+                                            settings.model = model
+                                            showingModelPicker = false
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = model,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = if (model == settings.model) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            if (model == settings.model) {
+                                                Text(text = "\u2713", color = MaterialTheme.colorScheme.primary)
+                                            }
+                                        }
                                     }
                                 }
                             }

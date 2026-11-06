@@ -52,5 +52,7 @@ data class ToolDefinition(
     val name: String,
     val description: String,
     val parameters: List<ToolParameter> = emptyList(),
-    val strict: Boolean = false
+    val strict: Boolean = false,
+    val confirmationRequired: Boolean = false,
+    val permissionRequired: String? = null
 )

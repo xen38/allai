@@ -17,8 +17,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.CoroutineScope
@@ -147,15 +149,21 @@ private fun FloatingChatOverlay(onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     val messages = ChatState.messages
     val inputState = remember { mutableStateOf<String>("") }
+    var isMinimized by remember { mutableStateOf(false) }
+
+    val width = if (isMinimized) 200.dp else 340.dp
+    val height = if (isMinimized) 60.dp else 540.dp
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .width(340.dp)
-            .height(540.dp)
+            .width(width)
+            .height(height)
             .background(MaterialTheme.colorScheme.surface)
             .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.large),
+        verticalArrangement = if (isMinimized) Arrangement.Center else Arrangement.Top
     ) {
+        // Header: app name + model selector + minimize + close
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -164,84 +172,115 @@ private fun FloatingChatOverlay(onClose: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "🫧 Allai",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            IconButton(onClick = onClose) {
-                Text(text = "✕")
-            }
-        }
-
-        HorizontalDivider()
-
-        LazyColumn(
-            modifier = Modifier.weight(1f).padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            items(
-                items = messages,
-                key = { it.hashCode().toString() }
-            ) { message: Message ->
-                val isUser = message.role == com.allai.app.model.Role.User
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
-                ) {
-                    Text(
-                        text = message.text,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .padding(8.dp, 6.dp)
-                            .background(
-                                if (isUser) Color(0xFF4A148C) else Color(0xFF003366),
-                                MaterialTheme.shapes.medium
-                            )
-                    )
-                }
-            }
-        }
-
-        HorizontalDivider()
-
-        Row(
-            modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BasicTextField(
-                value = inputState.value,
-                onValueChange = { newValue -> inputState.value = newValue },
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = 6.dp)
-                    .background(Color(0xFF1A102E), MaterialTheme.shapes.medium)
-                    .padding(8.dp),
-                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 12.sp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            IconButton(onClick = {
-                if (inputState.value.isNotBlank()) {
-                    val text = inputState.value
-                    inputState.value = ""
-                    messages.add(Message(com.allai.app.model.Role.User, text))
-                    scope.launch {
-                        try {
-                            val agent = AgentLoop()
-                            val config = AgentLoop.AgentConfig(
-                                provider = settings.provider,
-                                systemPrompt = settings.systemPrompt
-                            )
-                            val reply = agent.run(config, messages.toList())
-                            messages.add(Message(com.allai.app.model.Role.Agent, reply))
-                        } catch (e: Exception) {
-                            messages.add(Message(com.allai.app.model.Role.Agent, "Error: ${e.message}"))
-                        }
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "🫧 Allai",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (!isMinimized) {
+                    OutlinedButton(
+                        onClick = { /* model picker would open here */ },
+                        modifier = Modifier.width(120.dp)
+                    ) {
+                        Text(
+                            text = settings.model.take(20),
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1
+                        )
                     }
                 }
-            }) {
-                Text(text = "➤", color = MaterialTheme.colorScheme.primary)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (!isMinimized) {
+                    IconButton(onClick = { isMinimized = true }) {
+                        Text(text = "\u2013", color = MaterialTheme.colorScheme.onSurface)
+                    }
+                } else {
+                    IconButton(onClick = { isMinimized = false }) {
+                        Text(text = "\u25B6", color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                IconButton(onClick = onClose) {
+                    Text(text = "\u2716")
+                }
+            }
+        }
+
+        if (!isMinimized) {
+            HorizontalDivider()
+
+            LazyColumn(
+                modifier = Modifier.weight(1f).padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(
+                    items = messages,
+                    key = { it.hashCode().toString() }
+                ) { message: Message ->
+                    val isUser = message.role == com.allai.app.model.Role.User
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+                    ) {
+                        Text(
+                            text = message.text,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier
+                                .padding(8.dp, 6.dp)
+                                .background(
+                                    if (isUser) Color(0xFF4A148C) else Color(0xFF003366),
+                                    MaterialTheme.shapes.medium
+                                )
+                        )
+                    }
+                }
+            }
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier.padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BasicTextField(
+                    value = inputState.value,
+                    onValueChange = { newValue -> inputState.value = newValue },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(vertical = 6.dp)
+                        .background(Color(0xFF1A102E), MaterialTheme.shapes.medium)
+                        .padding(8.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 12.sp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                IconButton(onClick = {
+                    if (inputState.value.isNotBlank()) {
+                        val text = inputState.value
+                        inputState.value = ""
+                        messages.add(Message(com.allai.app.model.Role.User, text))
+                        scope.launch {
+                            try {
+                                val agent = AgentLoop()
+                                val config = AgentLoop.AgentConfig(
+                                    provider = settings.provider,
+                                    systemPrompt = settings.systemPrompt
+                                )
+                                val reply = agent.run(config, messages.toList())
+                                messages.add(Message(com.allai.app.model.Role.Agent, reply))
+                            } catch (e: Exception) {
+                                messages.add(Message(com.allai.app.model.Role.Agent, "Error: ${e.message}"))
+                            }
+                        }
+                    }
+                }) {
+                    Text(text = "\u2795", color = MaterialTheme.colorScheme.primary)
+                }
             }
         }
     }

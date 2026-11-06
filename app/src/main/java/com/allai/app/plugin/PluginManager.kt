@@ -13,6 +13,7 @@ import com.allai.app.self.SkillPlugin
 import com.allai.app.AllaiApplication
 import com.allai.app.model.ToolResult
 import java.io.File
+import androidx.core.content.ContextCompat
 
 interface PhonePlugin {
     val name: String
@@ -22,8 +23,16 @@ interface PhonePlugin {
         description = description,
         parameters = emptyList()
     )
+    fun requiresConfirmation(): Boolean = false
+    fun requiresPermission(): String? = null
     fun execute(arguments: Map<String, Any>): ToolResult
 }
+
+data class ToolExecutionResult(
+    val result: ToolResult,
+    val confirmationRequired: Boolean = false,
+    val confirmationMessage: String? = null
+)
 
 object PluginManager {
     private val plugins = mutableMapOf<String, PhonePlugin>()
@@ -60,12 +69,47 @@ object PluginManager {
             ok = false
         )
     }
+
+    fun runChecked(context: Context, name: String, arguments: Map<String, Any>): ToolExecutionResult {
+        val plugin = plugins[name] ?: return ToolExecutionResult(
+            result = ToolResult("", "", "Plugin not found: $name", ok = false)
+        )
+
+        val perm = plugin.requiresPermission()
+        if (perm != null) {
+            val hasPerm = ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED
+            if (!hasPerm) {
+                return ToolExecutionResult(
+                    result = ToolResult("", "", "Permission required: $perm", ok = false),
+                    confirmationRequired = true,
+                    confirmationMessage = "Grant the '$perm' permission to use the '$name' tool."
+                )
+            }
+        }
+
+        if (plugin.requiresConfirmation()) {
+            return ToolExecutionResult(
+                result = ToolResult("", "", "Confirmation required", ok = false),
+                confirmationRequired = true,
+                confirmationMessage = "Execute '$name' with arguments: ${arguments.entries.joinToString(", ") { "${it.key}=${it.value}" }}?"
+            )
+        }
+
+        return ToolExecutionResult(
+            result = plugin.execute(arguments),
+            confirmationRequired = false
+        )
+    }
+
+    fun checkPermission(context: Context, permission: String): Boolean =
+        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 }
 
 // Shell plugin - run terminal commands
 class ShellPlugin(private val context: Context) : PhonePlugin {
     override val name = "shell"
     override val description = "Execute shell commands on the Android device."
+    override fun requiresConfirmation(): Boolean = true
     override fun execute(arguments: Map<String, Any>): ToolResult {
         val cmd = arguments["command"] as? String ?: return ToolResult("", "", "Missing 'command' argument", false)
         val timeoutMs = (arguments["timeout_ms"] as? Number)?.toInt() ?: 10000
@@ -84,6 +128,8 @@ class ShellPlugin(private val context: Context) : PhonePlugin {
 class FilePlugin(private val context: Context) : PhonePlugin {
     override val name = "file"
     override val description = "Read and write files on the device storage."
+    override fun requiresPermission(): String? = android.Manifest.permission.MANAGE_EXTERNAL_STORAGE
+    override fun requiresConfirmation(): Boolean = true
     override fun execute(arguments: Map<String, Any>): ToolResult {
         val action = arguments["action"] as? String ?: return ToolResult("", "", "Missing 'action' argument", false)
         return when (action) {
@@ -126,6 +172,7 @@ class FilePlugin(private val context: Context) : PhonePlugin {
 class ContactsPlugin(private val context: Context) : PhonePlugin {
     override val name = "contacts"
     override val description = "Read phone contacts."
+    override fun requiresPermission(): String? = android.Manifest.permission.READ_CONTACTS
     override fun execute(arguments: Map<String, Any>): ToolResult {
         val action = arguments["action"] as? String ?: "list"
         return when (action) {
@@ -190,6 +237,8 @@ class ContactsPlugin(private val context: Context) : PhonePlugin {
 class SmsPlugin(private val context: Context) : PhonePlugin {
     override val name = "sms"
     override val description = "Send SMS messages."
+    override fun requiresPermission(): String? = android.Manifest.permission.SEND_SMS
+    override fun requiresConfirmation(): Boolean = true
     override fun execute(arguments: Map<String, Any>): ToolResult {
         val action = arguments["action"] as? String ?: "send"
         return when (action) {
@@ -213,6 +262,7 @@ class SmsPlugin(private val context: Context) : PhonePlugin {
 class LauncherPlugin(private val context: Context) : PhonePlugin {
     override val name = "launcher"
     override val description = "Launch apps by package name."
+    override fun requiresConfirmation(): Boolean = true
     override fun execute(arguments: Map<String, Any>): ToolResult {
         val action = arguments["action"] as? String ?: "launch"
         return when (action) {
@@ -260,6 +310,7 @@ class LauncherPlugin(private val context: Context) : PhonePlugin {
 class McpPlugin : PhonePlugin {
     override val name = "mcp"
     override val description = "Connect to and call MCP servers."
+    override fun requiresConfirmation(): Boolean = true
     override fun execute(arguments: Map<String, Any>): ToolResult {
         val action = arguments["action"] as? String ?: "call"
         return when (action) {

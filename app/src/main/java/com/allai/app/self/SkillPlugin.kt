@@ -9,6 +9,7 @@ import com.allai.app.memory.SkillStore
 class SkillPlugin(private val context: Context) : PhonePlugin {
     override val name = "skill"
     override val description = "Manage and execute skills - reusable capabilities taught to Allai."
+    override fun requiresConfirmation(): Boolean = true
 
     override fun toolDefinition(): com.allai.app.model.ToolDefinition =
         com.allai.app.model.ToolDefinition(

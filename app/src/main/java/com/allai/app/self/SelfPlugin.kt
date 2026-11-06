@@ -9,6 +9,7 @@ import com.allai.app.model.Memory
 class SelfPlugin(private val context: Context) : PhonePlugin {
     override val name = "self"
     override val description = "Interact with Allai's own systems: memories, settings, skills."
+    override fun requiresConfirmation(): Boolean = true
 
     override fun execute(arguments: Map<String, Any>): ToolResult {
         val action = arguments["action"] as? String ?: return ToolResult("", "", "Missing 'action' argument", false)

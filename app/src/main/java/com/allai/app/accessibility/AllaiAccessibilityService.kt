@@ -119,6 +119,8 @@ object AccessibilityEventStore {
 class AccessibilityPlugin : PhonePlugin {
     override val name = "accessibility"
     override val description = "Read screen content and interact with any app UI."
+    override fun requiresPermission(): String? = android.Manifest.permission.BIND_ACCESSIBILITY_SERVICE
+    override fun requiresConfirmation(): Boolean = true
     override fun execute(arguments: Map<String, Any>): ToolResult {
         val service = AllaiAccessibilityService.getInstance()
         if (service == null) {

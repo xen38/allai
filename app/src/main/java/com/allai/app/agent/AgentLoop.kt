@@ -1,8 +1,10 @@
 package com.allai.app.agent
 
+import android.content.Context
 import com.allai.app.model.*
 import com.allai.app.network.LlmClient
 import com.allai.app.plugin.PluginManager
+import com.allai.app.plugin.ToolExecutionResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -12,7 +14,8 @@ class AgentLoop {
     data class AgentConfig(
         val provider: LlmProvider,
         val maxToolIterations: Int = 10,
-        val systemPrompt: String = DEFAULT_SYSTEM_PROMPT
+        val systemPrompt: String = DEFAULT_SYSTEM_PROMPT,
+        val context: Context? = null
     )
 
     companion object {
@@ -57,8 +60,29 @@ Guidelines:
 
                 for (toolCall in toolCalls) {
                     currentMessages.add(Message(Role.Tool, "", System.currentTimeMillis()))
-                    val result = PluginManager.run(toolCall.name, toolCall.arguments)
-                    val resultText = if (result.ok) result.output else "ERROR: ${result.error}"
+
+                    val execResult = if (config.context != null) {
+                        PluginManager.runChecked(config.context!!, toolCall.name, toolCall.arguments)
+                    } else {
+                        val result = PluginManager.run(toolCall.name, toolCall.arguments)
+                        ToolExecutionResult(result = result)
+                    }
+
+                    if (execResult.confirmationRequired) {
+                        val confirmMsg = "CONFIRM_REQUIRED: ${execResult.confirmationMessage ?: "Confirm execution of ${toolCall.name}"}"
+                        currentMessages.add(Message(Role.Tool, confirmMsg))
+                        // Stop tool loop and ask user for confirmation
+                        val finalResponse = llm.sendMessage(
+                            provider = config.provider,
+                            messages = currentMessages + Message(Role.User, "A tool requires your confirmation: ${execResult.confirmationMessage ?: "Please confirm."}\nReply 'yes' to proceed or 'no' to cancel."),
+                            tools = emptyList(),
+                            temperature = 0.5
+                        )
+                        return@withContext finalResponse
+                    }
+
+                    val toolResult = execResult.result
+                    val resultText = if (toolResult.ok) toolResult.output else "ERROR: ${toolResult.error}"
                     currentMessages.add(Message(Role.Tool, "TOOL_RESULT:${toolCall.name}:$resultText"))
                 }
             }
@@ -104,8 +128,29 @@ Guidelines:
 
                 for (toolCall in toolCalls) {
                     currentMessages.add(Message(Role.Tool, "", System.currentTimeMillis()))
-                    val result = PluginManager.run(toolCall.name, toolCall.arguments)
-                    val resultText = if (result.ok) result.output else "ERROR: ${result.error}"
+
+                    val execResult = if (config.context != null) {
+                        PluginManager.runChecked(config.context!!, toolCall.name, toolCall.arguments)
+                    } else {
+                        val result = PluginManager.run(toolCall.name, toolCall.arguments)
+                        ToolExecutionResult(result = result)
+                    }
+
+                    if (execResult.confirmationRequired) {
+                        val confirmMsg = "CONFIRM_REQUIRED: ${execResult.confirmationMessage ?: "Confirm execution of ${toolCall.name}"}"
+                        currentMessages.add(Message(Role.Tool, confirmMsg))
+                        val finalResponse = llm.sendMessage(
+                            provider = config.provider,
+                            messages = currentMessages + Message(Role.User, "A tool requires your confirmation: ${execResult.confirmationMessage ?: "Please confirm."}\nReply 'yes' to proceed or 'no' to cancel."),
+                            tools = emptyList(),
+                            temperature = 0.5
+                        )
+                        onChunk(finalResponse)
+                        return@withContext finalResponse
+                    }
+
+                    val toolResult = execResult.result
+                    val resultText = if (toolResult.ok) toolResult.output else "ERROR: ${toolResult.error}"
                     currentMessages.add(Message(Role.Tool, "TOOL_RESULT:${toolCall.name}:$resultText"))
                 }
             }
