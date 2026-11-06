@@ -39,7 +39,9 @@ fun TerminalScreen() {
 
     // Auto-scroll to bottom when new content is added
     LaunchedEffect(log.size) {
-        scrollState.scrollToItem(log.size - 1)
+        if (log.size > 0) {
+            scrollState.scrollToItem(log.size - 1)
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(AllaiBackground)) {
