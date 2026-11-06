@@ -209,8 +209,9 @@ fun AgentScreen(settings: SettingsState) {
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                val displayModel = if (settings.model.length > 28) settings.model.substring(0, 25) + "..." else settings.model
                                 Text(
-                                    text = settings.model,
+                                    text = displayModel,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.weight(1f),
