@@ -314,18 +314,9 @@ fun AgentScreen(settings: SettingsState) {
                             singleLine = true
                         )
 
-                        val filteredModels = if (availableModels.isNotEmpty()) availableModels else listOf(
-                            "meta/llama-3.1-8b-instruct",
-                            "meta/llama-3.1-70b-instruct",
-                            "meta/llama-3.1-405b-instruct",
-                            "nvidia/nemotron-3-405b-a55b",
-                            "nvidia/nemotron-3-ultra-550b-a55b",
-                            "google/gemma-2-27b-it",
-                            "mistralai/mistral-7b-instruct-v0.3",
-                            "anthropic/claude-3.5-sonnet",
-                            "openai/gpt-4o",
-                            "custom"
-                        ).filter {
+                        val verifiedModels = availableModels + listOf(settings.model)
+                        val distinctModels = verifiedModels.distinct().filter { it.isNotBlank() }
+                        val filteredModels = distinctModels.filter {
                             searchQuery.isBlank() || it.lowercase().contains(searchQuery.lowercase())
                         }
 
